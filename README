@@ -1,1 +1,1 @@
-smak - An Erlang web application framework
+Smak is an Erlang web application framework which utilises the Erlang Web Gateway Interface (EWGI) specification.
