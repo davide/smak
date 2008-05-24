@@ -6,7 +6,7 @@
 -module(smak_string).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([split/3, is_whitespace/1, strip/1, strip/2, strip/3]).
+-export([split/1, split/2, split/3, is_whitespace/1, strip/1, strip/2, strip/3]).
 
 %% From http://unicode.org/Public/UNIDATA/PropList.txt
 %% 0009..000D ; White_Space # Cc  [5] <control-0009>..<control-000D>
@@ -31,12 +31,32 @@
 %% @type direction() = left | right | both
 -type(direction() :: 'left' | 'right' | 'both').
 
-%% @spec split(String::string(), Separators::char() | string(),
+%% @spec split(String::string()) -> [string()]
+%% @doc Return a list of strings of the strings in String separated by any
+%% whitespace characters.
+-spec(split/1 :: (string()) -> [[char(),...]]).
+
+split([]) ->
+    [];
+split(Str) when is_list(Str) ->
+    split_whitespace(Str, -1, []).
+
+%% @spec split(String::string(), Separators::char() | string() | whitespace) ->
+%%       [string()]
+%% @doc Return a list of strings of the strings in String, using Separators
+%% as the delimiter string.
+%% @see split/3
+-spec(split/2 :: (string(), string() | char() | 'whitespace') -> [[char(),...]]).
+
+split(Str, Seps) ->
+    split(Str, Seps, -1).
+
+%% @spec split(String::string(), Separators::char() | string() | whitespace,
 %%       MaxSplit::integer()) -> [string()]
 %% @doc Return a list of strings of the strings in String, using Separators
 %% as the delimiter string. If MaxSplit is > 0, only MaxSplit splits will
 %% occur (giving MaxSplit+1 resulting strings).
--spec(split/3 :: (string(), string() | char(), integer()) -> [[char(),...]]).
+-spec(split/3 :: (string(), string() | char() | 'whitespace', integer()) -> [[char(),...]]).
 
 split([], [], _N) ->
     [];
@@ -44,6 +64,8 @@ split([], _Seps, _N) ->
     [[]];
 split(Str, _Seps, 0) ->
     Str;
+split(Str, whitespace, N) ->
+    split_whitespace(Str, N, []);
 split(Str, Seps, N) when is_list(Seps) ->
     split_substring(Str, Seps, N, [], []);
 split(Str, Sep, N) when is_integer(Sep) ->
@@ -52,7 +74,7 @@ split(Str, Sep, N) when is_integer(Sep) ->
 split_char(Str, _S, 0, Toks) ->
     lists:reverse([Str|Toks]);
 split_char([S|Rest], S, N, Toks) ->
-    split_char(Rest, S, N-1, Toks);
+    split_char(Rest, S, N, Toks);
 split_char([C|Rest], S, N, Toks) ->
     split_char_acc(Rest, S, N, Toks, [C]);
 split_char([], _S, _N, Toks) ->
@@ -89,6 +111,22 @@ prefix([], String) when is_list(String) ->
     true;
 prefix(Pre, String) when is_list(Pre), is_list(String) ->
     false.
+
+split_whitespace(Str, 0, Toks) ->
+    lists:reverse([Str|Toks]);
+split_whitespace([S|Rest], N, Toks) when ?IS_WHITESPACE_GUARD(S) ->
+    split_whitespace(Rest, N, Toks);
+split_whitespace([C|Rest], N, Toks) ->
+    split_whitespace_acc(Rest, N, Toks, [C]);
+split_whitespace([], _N, Toks) ->
+    lists:reverse(Toks).
+
+split_whitespace_acc([S|Rest], N, Toks, Cs) when ?IS_WHITESPACE_GUARD(S) ->
+    split_whitespace(Rest, N-1, [lists:reverse(Cs)|Toks]);
+split_whitespace_acc([C|Rest], N, Toks, Cs) ->
+    split_whitespace_acc(Rest, N, Toks, [C|Cs]);
+split_whitespace_acc([], _N, Toks, Cs) ->
+    lists:reverse([lists:reverse(Cs)|Toks]).
 
 %% @spec strip(string()) -> string()
 %% @doc Strips both left and right sides of string of any whitespace.
