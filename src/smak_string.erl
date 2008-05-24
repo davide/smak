@@ -30,12 +30,13 @@
 
 %% @type direction() = left | right | both
 -type(direction() :: 'left' | 'right' | 'both').
-        
+
 %% @spec split(String::string(), Separators::char() | string(),
 %%       MaxSplit::integer()) -> [string()]
-%% @doc Return a list of strings separated by characters in Separators up to
-%%      MaxSplit splits.
--spec(split/3 :: (string(), string(), integer()) -> [[char(),...]]).
+%% @doc Return a list of strings of the strings in String, using Separators
+%% as the delimiter string. If MaxSplit is > 0, only MaxSplit splits will
+%% occur (giving MaxSplit+1 resulting strings).
+-spec(split/3 :: (string(), string() | char(), integer()) -> [[char(),...]]).
 
 split([], [], _N) ->
     [];
@@ -44,25 +45,50 @@ split([], _Seps, _N) ->
 split(Str, _Seps, 0) ->
     Str;
 split(Str, Seps, N) when is_list(Seps) ->
-    split1(Str, Seps, N, []).
+    split_substring(Str, Seps, N, [], []);
+split(Str, Sep, N) when is_integer(Sep) ->
+    split_char(Str, Sep, N, []).
 
-split1(S, _Seps, 0, Toks) ->
-    lists:reverse(Toks) ++ [S];
-split1([C|S], Seps, N, Toks) ->
-    case lists:member(C, Seps) of
-        true -> split1(S, Seps, N-1, Toks);
-        false -> split2(S, Seps, N, Toks, [C])
-    end;
-split1([], _Seps, _N, Toks) ->
+split_char(Str, _S, 0, Toks) ->
+    lists:reverse([Str|Toks]);
+split_char([S|Rest], S, N, Toks) ->
+    split_char(Rest, S, N-1, Toks);
+split_char([C|Rest], S, N, Toks) ->
+    split_char_acc(Rest, S, N, Toks, [C]);
+split_char([], _S, _N, Toks) ->
     lists:reverse(Toks).
 
-split2([C|S], Seps, N, Toks, Cs) ->
-    case lists:member(C, Seps) of
-        true -> split1(S, Seps, N-1, [lists:reverse(Cs)|Toks]);
-        false -> split2(S, Seps, N, Toks, [C|Cs])
-    end;
-split2([], _Seps, _N, Toks, Cs) ->
+split_char_acc([S|Rest], S, N, Toks, Cs) ->
+    split_char(Rest, S, N-1, [lists:reverse(Cs)|Toks]);
+split_char_acc([C|Rest], S, N, Toks, Cs) ->
+    split_char_acc(Rest, S, N, Toks, [C|Cs]);
+split_char_acc([], _S, _N, Toks, Cs) ->
     lists:reverse([lists:reverse(Cs)|Toks]).
+
+split_substring(S, _Seps, 0, Toks, _Cs) ->
+    %% Note: _Cs should always be empty here
+    lists:reverse([S|Toks]);
+split_substring([C|S], [C|SRest]=Seps, N, Toks, Cs) ->
+    case prefix(SRest, S) of
+        true ->
+            Str = string:substr(S, length(Seps)),
+            split_substring(Str, Seps, N - 1, [lists:reverse(Cs)|Toks], []);
+        false ->
+            split_substring(S, Seps, N, Toks, [C|Cs])
+    end;
+split_substring([C|S], Seps, N, Toks, Cs) ->
+    split_substring(S, Seps, N, Toks, [C|Cs]);
+split_substring([], _Seps, _N, Toks, Cs) ->
+    lists:reverse([lists:reverse(Cs)|Toks]).
+
+-spec(prefix/2 :: (string(), string()) -> bool()).
+             
+prefix([C|Pre], [C|String]) ->
+    prefix(Pre, String);
+prefix([], String) when is_list(String) ->
+    true;
+prefix(Pre, String) when is_list(Pre), is_list(String) ->
+    false.
 
 %% @spec strip(string()) -> string()
 %% @doc Strips both left and right sides of string of any whitespace.
