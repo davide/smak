@@ -7,11 +7,15 @@
 %% @type iodata() = binary() | iolist()
 -type(iodata() :: binary() | iolist()).
 
-%% @type iosusp() = {iodata() | '$eof', function() | '$eof'}
--type(iosusp() :: {iodata() | '$eof', function() | '$eof'}).
+%% NOTE: this function should always return a streamr()
+%% @type stream() = function()
+-type(stream() :: function()).
 
-%% @type ewgi_response() = iodata() | iosusp()
--type(ewgi_response() :: iodata() | iosusp()).
+%% @type streamr() = {} | {any(), stream()}
+-type(streamr() :: {} | {any(), stream()}).
+
+%% @type ewgi_response() = iodata() | stream()
+-type(ewgi_response() :: iodata() | stream()).
 
 %% @type ewgi_app() = function() | module()
 -type(ewgi_app() :: function() | atom() | tuple()).
