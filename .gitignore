@@ -1,3 +1,6 @@
 *.beam
 *.core
 erl_crash.dump
+
+## Erlware-specific build files
+_build
