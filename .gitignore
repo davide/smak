@@ -1,2 +1,3 @@
 *.beam
+*.core
 erl_crash.dump
