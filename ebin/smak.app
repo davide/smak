@@ -5,5 +5,5 @@
    {modules, [smak_auth_basic]},
    {registered, []},
    {applications, [kernel, stdlib]},
-   {start_phases, []}]}
+   {start_phases, []}]}.
 
