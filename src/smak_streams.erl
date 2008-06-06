@@ -10,6 +10,14 @@
 %% functional programming problems. It can probably be used to express
 %% certain solutions elegantly, but they will likely suffer severe
 %% performance penalties.
+%% @end
+%%
+%% Licensed under the MIT license:
+%% http://www.opensource.org/licenses/mit-license.php
+%%
+%% Some code is based on the Python Paste Project which is copyright Ian
+%% Bicking, Clark C. Evans, and contributors and released under the MIT
+%% license. See: http://pythonpaste.org/
 %% 
 %% Some portions are from Richard Carlsson's 2000 mailing list post which is
 %% covered by the LGPL license.
@@ -18,10 +26,10 @@
 -module(smak_streams).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([append/2, constant/1, drop/2, duplicate/2, empty/0, filter/2,
-	 first/2, foldl/3, foldr/3, foreach/2, integers/1, map/2, member/2,
-	 merge/3, nth/2, nthtail/2, push/2, seq/1, seq/2, seq/3,
-	 list_to_stream/1, subsequence/3, to_list/1]).
+-export([append/2, constant/1, drop/2, dropwhile/2, duplicate/2, empty/0,
+	 filter/2, first/2, foldl/3, foldr/3, foreach/2, integers/1, map/2,
+	 member/2, merge/3, nth/2, nthtail/2, push/2, seq/1, seq/2, seq/3,
+	 list_to_stream/1, subsequence/3, to_list/1, takewhile/2]).
 
 -include("smak.hrl").
 
@@ -30,9 +38,9 @@
 -define(HEAD(S), element(1, S)).
 -define(TAIL(S), element(2, S)).
 
-%% @spec empty() -> {}
+%% @spec empty() -> function()
 %% @doc Returns an empty stream
--spec(empty/0 :: () -> {}).
+-spec(empty/0 :: () -> fun(() -> {})).
 
 empty() ->
     ?DELAY({}).
@@ -152,6 +160,24 @@ first(N, S) when is_integer(N), N > 0, is_function(S, 0) ->
                    {}
            end).
 
+%% @spec takewhile(function(), stream()) -> stream()
+%% @doc Accumulates elements from a stream while the unary predicate is
+%% true. It forces each of the elements of the stream it must test.
+-spec(takewhile/2 :: (function(), stream()) -> stream()).
+
+takewhile(P, S) when is_function(P, 1), is_function(S, 0) ->
+    ?DELAY(case ?FORCE(S) of
+               {H, T} ->
+                   case P(H) of
+                       true ->
+                           {H, takewhile(P, T)};
+                       false ->
+                           {}
+                   end;
+               {} ->
+                   {}
+           end).
+
 %% @spec drop(integer(), stream()) -> stream()
 %% @doc The stream [EN+1, EN+2, ...], if S is [E1, ..., EN, EN+1, ...].
 -spec(drop/2 :: (integer(), stream()) -> stream()).
@@ -162,6 +188,24 @@ drop(N, S) when is_integer(N), N > 0, is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
                {_, T} ->
                    ?FORCE((drop(N - 1, T)));
+               {} ->
+                   {}
+           end).
+
+%% @spec dropwhile(function(), stream()) -> stream()
+%% @doc Drops elements from a stream while the unary predicate is true. It
+%% forces each of the elements of the stream it must test.
+-spec(dropwhile/2 :: (function(), stream()) -> stream()).
+
+dropwhile(P, S) when is_function(P, 1), is_function(S, 0) ->
+    ?DELAY(case ?FORCE(S) of
+               {H, T}=SF ->
+                   case P(H) of
+                       true ->
+                           ?FORCE((dropwhile(P, T)));
+                       false ->
+                           SF
+                   end;
                {} ->
                    {}
            end).

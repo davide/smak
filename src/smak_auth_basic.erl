@@ -1,9 +1,17 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
 %% @copyright 2008 Smarkets Limited.
-
+%%
 %% @doc Smak basic authentication middleware. This middleware should be
 %% avoided unless you need to support older HTTP 1.0 clients over SSL. Digest
 %% authentication is probably more appropriate.
+%% @end
+%%
+%% Licensed under the MIT license:
+%% http://www.opensource.org/licenses/mit-license.php
+%%
+%% Some code is based on the Python Paste Project which is copyright Ian
+%% Bicking, Clark C. Evans, and contributors and released under the MIT
+%% license. See: http://pythonpaste.org/
 
 -module(smak_auth_basic, [Application, Realm, AuthFunc]).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
@@ -24,10 +32,10 @@
 init(_) ->
     ok.
 
-%% @spec handle_request(proplist(), function()) -> ewgi_response()
+%% @spec handle_request(ewgi_env(), ewgi_start_response()) -> ewgi_response()
 %% @doc Checks for basic authentication and executes the application if
 %% authentication is successful. Otherwise, gives an error.
--spec(handle_request/2 :: (proplist(), function()) -> ewgi_response()).
+-spec(handle_request/2 :: (ewgi_env(), ewgi_start_response()) -> ewgi_response()).
               
 handle_request(Env, StartResp) ->
     case smak_ewgi:remote_user(Env) of
@@ -36,16 +44,20 @@ handle_request(Env, StartResp) ->
                 Result when is_list(Result) ->
                     Env1 = smak_ewgi:auth_type(Env, "basic"),
                     Env2 = smak_ewgi:remote_user(Env1, Result),
+                    %% Authentication was successful; serve the app
                     smak_ewgi:call_application(Application, Env2, StartResp);
                 F when is_function(F) ->
                     F(Env, StartResp)
             end;
-        _ ->
+        _ -> % Remote user already defined
             smak_ewgi:call_application(Application, Env, StartResp)
     end.
 
--spec(authenticate/1 :: (proplist()) -> string() | function()).
-             
+%% Tests the environment for authorization and either returns the
+%% authenticated username or an ewgi application which gives an
+%% "Unauthorized" response.
+-spec(authenticate/1 :: (ewgi_env()) -> string() | ewgi_app()).
+
 authenticate(Env) ->
     case smak_ewgi:env_get(Env, "HTTP_AUTHORIZATION") of
         Authorization when is_list(Authorization) ->
@@ -65,12 +77,11 @@ authenticate(Env) ->
             unauthorized(Env)
     end.
 
--spec(unauthorized/1 :: (proplist()) -> function()).
+%% Prompts for basic authentication giving a 401 Unauthorized response.
+-spec(unauthorized/1 :: (ewgi_env()) -> ewgi_app()).
 
 unauthorized(_Env) ->
-    F = fun(_, StartResp) ->
-                BR = io_lib:format("Basic realm=\"~s\"", [Realm]),
-                StartResp(?UNAUTH, [{"WWW-Authenticate", BR}]),
-                <<"Authorization Required">>
-        end,
-    F.
+    H = [{"WWW-Authenticate",
+          io_lib:format("Basic realm=\"~s\"", [Realm])}],
+    smak_http_errors:unauthorized([], H, []).
+

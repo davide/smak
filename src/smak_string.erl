@@ -1,7 +1,15 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
 %% @copyright 2008 Smarkets Limited.
-
+%%
 %% @doc Smak miscellaneous string functions
+%% @end
+%%
+%% Licensed under the MIT license:
+%% http://www.opensource.org/licenses/mit-license.php
+%%
+%% Some code is based on the Python Paste Project which is copyright Ian
+%% Bicking, Clark C. Evans, and contributors and released under the MIT
+%% license. See: http://pythonpaste.org/
 
 -module(smak_string).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
