@@ -83,5 +83,5 @@ authenticate(Env) ->
 unauthorized(_Env) ->
     H = [{"WWW-Authenticate",
           io_lib:format("Basic realm=\"~s\"", [Realm])}],
-    smak_http_errors:unauthorized([], H, []).
+    smak_http_status:unauthorized([], H, []).
 

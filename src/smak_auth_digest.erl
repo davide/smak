@@ -202,7 +202,7 @@ unauthorized(Stale) ->
     Head = get_digest_head(Nonce, Opaque, Stale),
     BR = io_lib:format("Digest ~s", [Head]),
     H = [{"WWW-Authenticate", BR}],
-    smak_http_errors:unauthorized([], H, []).
+    smak_http_status:unauthorized([], H, []).
 
 -spec(get_digest_head/3 :: (string(), string(), bool()) -> string()).
 

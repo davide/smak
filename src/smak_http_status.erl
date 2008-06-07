@@ -1,9 +1,9 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
 %% @copyright 2008 Smarkets Limited.
 %%
-%% @doc Smak HTTP failure methods. A middleware application is provided which
-%% catches exceptions of a special form and displays the appropriate error
-%% message. smak_http_redirection handles the 3xx class of status codes.
+%% @doc Smak HTTP status methods. A middleware application is provided which
+%% catches exceptions of a special form and displays the appropriate status
+%% message.
 %% @end
 %%
 %% Licensed under the MIT license:
@@ -13,7 +13,7 @@
 %% Bicking, Clark C. Evans, and contributors and released under the MIT
 %% license. See: http://pythonpaste.org/
 
--module(smak_http_errors).
+-module(smak_http_status).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
 -export([http_error/1]).
