@@ -16,7 +16,7 @@
 
 -define(UNIX_EPOCH, {{1970,1,1},{0,0,0}}).
 
--export([now_to_unix_ts/0, now_to_unix_ts/1, now_to_unix_ts/2, now_utc_ms/0]).
+-export([now_to_unix_ts/0, now_to_unix_ts/1, now_to_unix_ts/2, now_utc_ms/0, now_utc_ts_ms/0]).
 
 %% @spec now_to_unix_ts() -> integer()
 %% @doc Gives the current UNIX timestamp.
@@ -49,3 +49,12 @@ now_to_unix_ts(Tm, Ms) when is_integer(Ms) ->
 now_utc_ms() ->
     {_, _, Ms} = Now = erlang:now(),
     {calendar:now_to_universal_time(Now), Ms}.
+
+%% @spec now_utc_ts_ms() -> integer()
+%% @doc Gives the number of milliseconds since the UNIX epoch.
+-spec(now_utc_ts_ms/0 :: () -> integer()).
+             
+now_utc_ts_ms() ->
+    {Tm, Ms} = now_utc_ms(),
+    now_to_unix_ts(Tm) * 1000 + round(Ms / 1000).
+
