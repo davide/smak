@@ -69,4 +69,6 @@ decode(Key, <<HMACSignature:20/binary, Timestamp:48/integer, IV:16/binary, DataC
             end;
         _ ->
             {error, cookie_tampered}
-    end.
+    end;
+decode(_, _, _) ->
+    {error, invalid_cookie}.
