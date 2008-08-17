@@ -15,6 +15,7 @@
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
 -export([split/1, split/2, split/3, is_whitespace/1, strip/1, strip/2, strip/3]).
+-export([partition/2]).
 
 %% From http://unicode.org/Public/UNIDATA/PropList.txt
 %% 0009..000D ; White_Space # Cc  [5] <control-0009>..<control-000D>
@@ -72,27 +73,20 @@ split([], _Seps, _N) ->
     [[]];
 split(Str, _Seps, 0) ->
     Str;
-split(Str, whitespace, N) ->
+split(Str, whitespace, N) when is_integer(N) ->
     split_whitespace(Str, N, []);
-split(Str, Seps, N) when is_list(Seps) ->
+split(Str, Seps, N) when is_list(Seps), is_integer(N) ->
     split_substring(Str, Seps, N, [], []);
-split(Str, Sep, N) when is_integer(Sep) ->
-    split_char(Str, Sep, N, []).
+split(Str, Sep, N) when is_integer(Sep), is_integer(N) ->
+    split_char(Str, Sep, N, [], []).
 
-split_char(Str, _S, 0, Toks) ->
-    lists:reverse([Str|Toks]);
-split_char([S|Rest], S, N, Toks) ->
-    split_char(Rest, S, N, Toks);
-split_char([C|Rest], S, N, Toks) ->
-    split_char_acc(Rest, S, N, Toks, [C]);
-split_char([], _S, _N, Toks) ->
-    lists:reverse(Toks).
-
-split_char_acc([S|Rest], S, N, Toks, Cs) ->
-    split_char(Rest, S, N-1, [lists:reverse(Cs)|Toks]);
-split_char_acc([C|Rest], S, N, Toks, Cs) ->
-    split_char_acc(Rest, S, N, Toks, [C|Cs]);
-split_char_acc([], _S, _N, Toks, Cs) ->
+split_char(S, _Sep, 0, Toks, _Cs) ->
+    lists:reverse([S|Toks]);
+split_char([Sep|S], Sep, N, Toks, Cs) ->
+    split_char(S, Sep, N-1, [lists:reverse(Cs)|Toks], []);
+split_char([C|S], Sep, N, Toks, Cs) ->
+    split_char(S, Sep, N, Toks, [C|Cs]);
+split_char([], _Sep, _N, Toks, Cs) ->
     lists:reverse([lists:reverse(Cs)|Toks]).
 
 split_substring(S, _Seps, 0, Toks, _Cs) ->
@@ -210,3 +204,36 @@ is_whitespace(Ch) when ?IS_WHITESPACE_GUARD(Ch) ->
     true;
 is_whitespace(_) ->
     false.
+
+%% @spec partition(String, Sep) -> {String, [], []} | {Prefix, Sep, Postfix}
+%% @doc Inspired by Python 2.5's str.partition:
+%%      partition("foo/bar", "/") = {"foo", "/", "bar"},
+%%      partition("foo", "/") = {"foo", "", ""}.
+%% From MochiWeb: http://code.google.com/p/mochiweb/
+-spec(partition/2 :: (string(), string()) -> {string(), string(), string()}).
+partition(String, Sep) ->
+    case partition(String, Sep, []) of
+        undefined ->
+            {String, "", ""};
+        Result ->
+            Result
+    end.
+
+partition("", _Sep, _Acc) ->
+    undefined;
+partition(S, Sep, Acc) ->
+    case partition2(S, Sep) of
+        undefined ->
+            [C | Rest] = S,
+            partition(Rest, Sep, [C | Acc]);
+        Rest ->
+            {lists:reverse(Acc), Sep, Rest}
+    end.
+
+partition2(Rest, "") ->
+    Rest;
+partition2([C | R1], [C | R2]) ->
+    partition2(R1, R2);
+partition2(_S, _Sep) ->
+    undefined.
+
