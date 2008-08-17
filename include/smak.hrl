@@ -32,3 +32,14 @@
 
 %% @type ewgi_app() = function() | module()
 -type(ewgi_app() :: fun((ewgi_env(), ewgi_start_response()) -> ewgi_response()) | atom() | tuple()).
+
+%% Record representing each of the parts of a well-formed URL.
+-record(urlparts, {
+          scheme=[],
+          netloc=[],
+          path=[],
+          params=[],
+          qry=[],
+          fragment=[]
+         }).
+
