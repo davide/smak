@@ -75,45 +75,52 @@
 
 -include("smak.hrl").
 
--define(IS_ALWAYS_SAFE(C), C >= $A, C =< $Z; C >= $a, C =< $z; C >= $0, C =< $9;
-                           C =:= $_; C =:= $.; C =:= $-; C =:= $~).
+-define(IS_ALWAYS_SAFE(C), (((C >= $A) and (C =< $Z))
+                            or ((C >= $a) and (C =< $z))
+                            or ((C >= $0) and (C =< $9))
+                            or (C =:= $_)
+                            or (C =:= $.)
+                            or (C =:= $-)
+                            or (C =:= $~))).
 
--define(IS_HEX_CHAR(C), C >= $0, C =< $9; C >= $a, C =< $f; C >= $A, C =< $f).
+-define(IS_HEX_CHAR(C), (((C >= $0) and (C =< $9))
+                         or ((C >= $a) and (C =< $f))
+                         or ((C >= $A) and (C =< $f)))).
 
--define(USES_RELATIVE(S), ((S =:= "ftp") or (S =:= "http")) or (S =:= "gopher")
+-define(USES_RELATIVE(S), ((S =:= "ftp") or (S =:= "http") or (S =:= "gopher")
         or (S =:= "nntp") or (S =:= "imap") or (S =:= "wais") or (S =:= "file")
         or (S =:= "https") or (S =:= "shttp") or (S =:= "mms")
         or (S =:= "prospero") or (S =:= "rtsp") or (S =:= "rtspu")
-        or (S =:= "") or (S =:= "sftp")).
+        or (S =:= "") or (S =:= "sftp"))).
 
--define(USES_NETLOC(S), (S =:= "ftp") or (S =:= "http") or (S =:= "gopher")
+-define(USES_NETLOC(S), ((S =:= "ftp") or (S =:= "http") or (S =:= "gopher")
         or (S =:= "nntp") or (S =:= "telnet") or (S =:= "imap")
         or (S =:= "wais") or (S =:= "file") or (S =:= "mms") or (S =:= "https")
         or (S =:= "shttp") or (S =:= "snews") or (S =:= "prospero")
         or (S =:= "rtsp") or (S =:= "rtspu") or (S =:= "rsync") or (S =:= "")
-        or (S =:= "svn") or (S =:= "svn+ssh") or (S =:= "sftp")).
+        or (S =:= "svn") or (S =:= "svn+ssh") or (S =:= "sftp"))).
 
--define(NON_HIERARCHICAL(S), (S =:= "gopher") or (S =:= "hdl")
+-define(NON_HIERARCHICAL(S), ((S =:= "gopher") or (S =:= "hdl")
         or (S =:= "mailto") or (S =:= "news") or (S =:= "telnet")
         or (S =:= "wais") or (S =:= "imap") or (S =:= "snews")
-        or (S =:= "sip") or (S =:= "sips")).
+        or (S =:= "sip") or (S =:= "sips"))).
 
--define(USES_FRAGMENT(S), (S =:= "ftp") or (S =:= "hdl") or (S =:= "http")
+-define(USES_FRAGMENT(S), ((S =:= "ftp") or (S =:= "hdl") or (S =:= "http")
         or (S =:= "gopher") or (S =:= "news") or (S =:= "nntp")
         or (S =:= "wais") or (S =:= "https") or (S =:= "shttp")
         or (S =:= "snews") or (S =:= "file") or (S =:= "prospero")
-        or (S =:= "")).
+        or (S =:= ""))).
 
--define(USES_PARAMS(S), (S =:= "ftp") or (S =:= "hdl") or (S =:= "prospero")
+-define(USES_PARAMS(S), ((S =:= "ftp") or (S =:= "hdl") or (S =:= "prospero")
         or (S =:= "http") or (S =:= "imap") or (S =:= "https")
         or (S =:= "shttp") or (S =:= "rtsp") or (S =:= "rtspu")
         or (S =:= "sip") or (S =:= "sips") or (S =:= "mms") or (S =:= "")
-        or (S =:= "sftp")).
+        or (S =:= "sftp"))).
 
--define(USES_QUERY(S), (S =:= "http") or (S =:= "wais") or (S =:= "imap")
+-define(USES_QUERY(S), ((S =:= "http") or (S =:= "wais") or (S =:= "imap")
         or (S =:= "https") or (S =:= "shttp") or (S =:= "mms")
         or (S =:= "gopher") or (S =:= "rtsp") or (S =:= "rtspu")
-        or (S =:= "sip") or (S =:= "sips") or (S =:= "")).
+        or (S =:= "sip") or (S =:= "sips") or (S =:= ""))).
 
 -define(IS_VALID_SCHEME_CHAR(C), (((Ch >= $a) and (Ch =< $z))
                                   or ((Ch >= $A) and (Ch =< $Z))
