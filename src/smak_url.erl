@@ -80,47 +80,47 @@
 
 -define(IS_HEX_CHAR(C), C >= $0, C =< $9; C >= $a, C =< $f; C >= $A, C =< $f).
 
--define(USES_RELATIVE(S), (S =:= "ftp" orelse S =:= "http" orelse S =:= "gopher"
-                           orelse S =:= "nntp" orelse S =:= "imap" orelse S =:= "wais"
-                           orelse S =:= "file" orelse S =:= "https" orelse S =:= "shttp"
-                           orelse S =:= "mms" orelse S =:= "prospero" orelse S =:= "rtsp" 
-                           orelse S =:= "rtspu" orelse S =:= "" orelse S =:= "sftp")).
+-define(USES_RELATIVE(S), ((S =:= "ftp") or (S =:= "http")) or (S =:= "gopher")
+        or (S =:= "nntp") or (S =:= "imap") or (S =:= "wais") or (S =:= "file")
+        or (S =:= "https") or (S =:= "shttp") or (S =:= "mms")
+        or (S =:= "prospero") or (S =:= "rtsp") or (S =:= "rtspu")
+        or (S =:= "") or (S =:= "sftp")).
 
--define(USES_NETLOC(S), (S =:= "ftp" orelse S =:= "http" orelse S =:= "gopher"
-                         orelse S =:= "nntp" orelse S =:= "telnet" orelse S =:= "imap"
-                         orelse S =:= "wais" orelse S =:= "file" orelse S =:= "mms"
-                         orelse S =:= "https" orelse S =:= "shttp" orelse S =:= "snews"
-                         orelse S =:= "prospero" orelse S =:= "rtsp"
-                         orelse S =:= "rtspu" orelse S =:= "rsync" orelse S =:= ""
-                         orelse S =:= "svn" orelse S =:= "svn+ssh" orelse S =:= "sftp")).
+-define(USES_NETLOC(S), (S =:= "ftp") or (S =:= "http") or (S =:= "gopher")
+        or (S =:= "nntp") or (S =:= "telnet") or (S =:= "imap")
+        or (S =:= "wais") or (S =:= "file") or (S =:= "mms") or (S =:= "https")
+        or (S =:= "shttp") or (S =:= "snews") or (S =:= "prospero")
+        or (S =:= "rtsp") or (S =:= "rtspu") or (S =:= "rsync") or (S =:= "")
+        or (S =:= "svn") or (S =:= "svn+ssh") or (S =:= "sftp")).
 
--define(NON_HIERARCHICAL(S), (S =:= "gopher" orelse S =:= "hdl" orelse S =:= "mailto"
-                              orelse S =:= "news" orelse S =:= "telnet"
-                              orelse S =:= "wais" orelse S =:= "imap"
-                              orelse S =:= "snews" orelse S =:= "sip"
-                              orelse S =:= "sips")).
+-define(NON_HIERARCHICAL(S), (S =:= "gopher") or (S =:= "hdl")
+        or (S =:= "mailto") or (S =:= "news") or (S =:= "telnet")
+        or (S =:= "wais") or (S =:= "imap") or (S =:= "snews")
+        or (S =:= "sip") or (S =:= "sips")).
 
--define(USES_FRAGMENT(S), (S =:= "ftp" orelse S =:= "hdl" orelse S =:= "http"
-                           orelse S =:= "gopher" orelse S =:= "news" orelse S =:= "nntp"
-                           orelse S =:= "wais" orelse S =:= "https" orelse S =:= "shttp"
-                           orelse S =:= "snews" orelse S =:= "file"
-                           orelse S =:= "prospero" orelse S =:= "")).
+-define(USES_FRAGMENT(S), (S =:= "ftp") or (S =:= "hdl") or (S =:= "http")
+        or (S =:= "gopher") or (S =:= "news") or (S =:= "nntp")
+        or (S =:= "wais") or (S =:= "https") or (S =:= "shttp")
+        or (S =:= "snews") or (S =:= "file") or (S =:= "prospero")
+        or (S =:= "")).
 
--define(USES_PARAMS(S), (S =:= "ftp" orelse S =:= "hdl" orelse S =:= "prospero"
-                         orelse S =:= "http" orelse S =:= "imap" orelse S =:= "https"
-                         orelse S =:= "shttp" orelse S =:= "rtsp" orelse S =:= "rtspu"
-                         orelse S =:= "sip" orelse S =:= "sips" orelse S =:= "mms"
-                         orelse S =:= "" orelse S =:= "sftp")).
+-define(USES_PARAMS(S), (S =:= "ftp") or (S =:= "hdl") or (S =:= "prospero")
+        or (S =:= "http") or (S =:= "imap") or (S =:= "https")
+        or (S =:= "shttp") or (S =:= "rtsp") or (S =:= "rtspu")
+        or (S =:= "sip") or (S =:= "sips") or (S =:= "mms") or (S =:= "")
+        or (S =:= "sftp")).
 
--define(USES_QUERY(S), (S =:= "http" orelse S =:= "wais" orelse S =:= "imap"
-                        orelse S =:= "https" orelse S =:= "shttp" orelse S =:= "mms" 
-                        orelse S =:= "gopher" orelse S =:= "rtsp" orelse S =:= "rtspu" 
-                        orelse S =:= "sip" orelse S =:= "sips" orelse S =:= "")).
+-define(USES_QUERY(S), (S =:= "http") or (S =:= "wais") or (S =:= "imap")
+        or (S =:= "https") or (S =:= "shttp") or (S =:= "mms")
+        or (S =:= "gopher") or (S =:= "rtsp") or (S =:= "rtspu")
+        or (S =:= "sip") or (S =:= "sips") or (S =:= "")).
 
--define(IS_VALID_SCHEME_CHAR(C), ((Ch >= $a andalso Ch =< $z) orelse
-                                  (Ch >= $A andalso Ch =< $Z) orelse
-                                  (Ch >= $0 andalso Ch =< $9) orelse
-                                  (Ch =:= $+ orelse Ch =:= $- orelse Ch =:= $.))).
+-define(IS_VALID_SCHEME_CHAR(C), (((Ch >= $a) and (Ch =< $z))
+                                  or ((Ch >= $A) and (Ch =< $Z))
+                                  or ((Ch >= $0) and (Ch =< $9))
+                                  or (Ch =:= $+)
+                                  or (Ch =:= $-)
+                                  or (Ch =:= $.))).
 
 %% Put the parts of a URL back together. It should result in an equivalent URL.
 unparse(Scheme, Netloc, Path, [], Query, Fragment)
@@ -142,20 +142,20 @@ unsplit(Scheme, Netloc, Path, Query, Fragment)
 %% Put it back together
 unsplit(#urlparts{netloc=N, path="/" ++ _=P}=Parts) when N =/= [] ->
     unsplit_scheme("//" ++ N ++ P, Parts);
-unsplit(#urlparts{netloc=N, path=P}=Parts) when N =/= [] andalso P =/= [] ->
+unsplit(#urlparts{netloc=N, path=P}=Parts) when N =/= [], P =/= [] ->
     unsplit_scheme("//" ++ N ++ "/" ++ P, Parts);
 unsplit(#urlparts{netloc=N}=Parts) when N =/= [] ->
     unsplit_scheme("//" ++ N, Parts);
 unsplit(#urlparts{path="//" ++ _=P}=Parts) ->
     unsplit_scheme(P, Parts);
 unsplit(#urlparts{netloc=N, scheme=Scheme, path="/" ++ _=P}=Parts)
-  when Scheme =/= [] andalso ?USES_NETLOC(Scheme) ->
+  when Scheme =/= [], ?USES_NETLOC(Scheme) ->
     unsplit_scheme("//" ++ N ++ P, Parts);
 unsplit(#urlparts{netloc=N, scheme=Scheme, path=P}=Parts)
-  when Scheme =/= [] andalso ?USES_NETLOC(Scheme) andalso P =/= [] ->
+  when Scheme =/= [], ?USES_NETLOC(Scheme), P =/= [] ->
     unsplit_scheme("//" ++ N ++ "/" ++ P, Parts);
 unsplit(#urlparts{netloc=N, scheme=Scheme}=Parts)
-  when Scheme =/= [] andalso ?USES_NETLOC(Scheme) ->
+  when Scheme =/= [], ?USES_NETLOC(Scheme) ->
     unsplit_scheme("//" ++ N, Parts).
 
 unsplit_scheme(Url, #urlparts{scheme=[]}=P) ->
@@ -201,10 +201,10 @@ split(Url) when is_list(Url) ->
     split(Url, [], true).
 
 split([HCh, TCh1, TCh2, PCh, $:|UrlRest], _, AllowFragments)
-  when ((HCh =:= $H orelse HCh =:= $h) andalso
-       (TCh1 =:= $T orelse TCh1 =:= $t) andalso
-       (TCh2 =:= $T orelse TCh2 =:= $t) andalso
-       (PCh =:= $P orelse PCh =:= $p)),
+  when (((HCh =:= $H) or (HCh =:= $h))
+        and ((TCh1 =:= $T) or (TCh1 =:= $t))
+        and ((TCh2 =:= $T) or (TCh2 =:= $t))
+        and ((PCh =:= $P) or (PCh =:= $p))),
        is_boolean(AllowFragments) ->
     lists:foldl(fun(F, Acc) -> F(Acc) end, #urlparts{scheme="http", path=UrlRest},
                 [fun(Rec) -> split_netloc(true, Rec) end,
@@ -233,7 +233,7 @@ split_scheme(Rec) ->
             Rec
     end.
 
-split_netloc(Opt, #urlparts{path="//" ++ _}=Rec) when Opt orelse ?USES_NETLOC(Rec#urlparts.scheme) ->
+split_netloc(Opt, #urlparts{path="//" ++ _}=Rec) when Opt; ?USES_NETLOC(Rec#urlparts.scheme) ->
     {N, U} = split_netloc_url(Rec#urlparts.path, 3),
     Rec#urlparts{path=U, netloc=N};
 split_netloc(_, Rec) ->
@@ -253,7 +253,7 @@ split_netloc_url(Url, Start) when is_list(Url) ->
                         end, Delim0, "/?#"),
     {string:substr(Url, Start, Delim - Start), string:substr(Url, Delim)}.
 
-split_fragment(true, Opt, Rec) when Opt orelse ?USES_FRAGMENT(Rec#urlparts.scheme) ->
+split_fragment(true, Opt, Rec) when Opt; ?USES_FRAGMENT(Rec#urlparts.scheme) ->
     case lists:member($#, Rec#urlparts.path) of
         true ->
             [U, F] = smak_string:split(Rec#urlparts.path, $#, 1),
@@ -264,7 +264,7 @@ split_fragment(true, Opt, Rec) when Opt orelse ?USES_FRAGMENT(Rec#urlparts.schem
 split_fragment(_, _, Rec) ->
     Rec.
 
-split_query(Opt, Rec) when Opt orelse ?USES_QUERY(Rec#urlparts.scheme) ->
+split_query(Opt, Rec) when Opt; ?USES_QUERY(Rec#urlparts.scheme) ->
     case lists:member($?, Rec#urlparts.path) of
         true ->
             [U, Q] = smak_string:split(Rec#urlparts.path, $?, 1),
@@ -305,10 +305,10 @@ join(Base, Url, AllowFragments)
   when is_list(Base), is_list(Url), is_boolean(AllowFragments) ->
     BaseParts = parse(Base, [], AllowFragments),
     Parts = parse(Url, BaseParts#urlparts.scheme, AllowFragments),
-    if Parts#urlparts.scheme =/= BaseParts#urlparts.scheme
-       orelse not ?USES_RELATIVE(Parts#urlparts.scheme) ->
+    if (Parts#urlparts.scheme =/= BaseParts#urlparts.scheme);
+       (not ?USES_RELATIVE(Parts#urlparts.scheme)) ->
             Url;
-       ?USES_NETLOC(Parts#urlparts.scheme) andalso Parts#urlparts.netloc =/= [] ->
+       ?USES_NETLOC(Parts#urlparts.scheme), (Parts#urlparts.netloc =/= []) ->
             unparse(Parts);
        ?USES_NETLOC(Parts#urlparts.scheme) ->
             join1(BaseParts, Parts#urlparts{netloc=BaseParts#urlparts.netloc});
@@ -387,7 +387,7 @@ prune_dots([A], Acc) ->
     prune_dots([], [A|Acc]);
 prune_dots([A, ".."], Acc) ->
     prune_dots([], ["..",A|Acc]);
-prune_dots([A, ".."|R], Acc) when A =/= [] andalso A =/= ".." ->
+prune_dots([A, ".."|R], Acc) when (A =/= []), (A =/= "..") ->
     prune_dots(lists:reverse(Acc) ++ R);
 prune_dots([A|R], Acc) ->
     prune_dots(R, [A|Acc]).
