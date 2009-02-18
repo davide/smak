@@ -1,0 +1,3 @@
+[submodule "deps/ewgi"]
+	path = deps/ewgi
+	url = git://github.com/skarab/ewgi.git
