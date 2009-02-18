@@ -15,6 +15,7 @@
               ,smak_http_status
               ,smak_random
               ,smak_response
+              ,smak_route
               ,smak_sn_cookie
               ,smak_streams
               ,smak_string
