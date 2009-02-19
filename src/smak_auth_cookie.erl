@@ -34,16 +34,14 @@
           secure = false
          }).
 
-%% External API
-
 %% @spec init(Application::ewgi_app(), Key::binary(), Options::proplist()) -> ewgi_app()
 %% @doc Initializes authentication middleware and returns the appropriate application.
 -spec init(ewgi_app(), binary(), proplist()) -> ewgi_app().
 init(Application, Key, Options) when is_binary(Key), size(Key) >= 16 ->
     case populate_record(Options, #cka{application=Application, key=Key}) of
         Cka when is_record(Cka, cka) ->
-            F = fun(Env, StartResp) ->
-                        handle_request(Env, StartResp, Cka)
+            F = fun(Ctx) ->
+                        handle_request(Ctx, Cka)
                 end,
             F;
         {error, Reason} ->
@@ -52,79 +50,80 @@ init(Application, Key, Options) when is_binary(Key), size(Key) >= 16 ->
             {error, invalid_parameters}
     end.
 
-handle_request(Env0, StartResp, Cka) ->
-    Env = decode_cookies(smak_ewgi:http_cookie(Env0), Env0, Cka),
-    smak_ewgi:call_application(Cka#cka.application, add_funs(Env, Cka), StartResp).
+-spec handle_request(#ewgi_context{}, #cka{}) -> #ewgi_context{}.
+handle_request(Ctx0, Cka) ->
+    Ctx = decode_cookies(ewgi_api:get_header_value("cookie", Ctx0), Ctx0, Cka),
+    ewgi_application:run(Cka#cka.application, add_funs(Ctx, Cka)).
 
-decode_cookies(undefined, Env, _) ->
-    Env;
-decode_cookies(Cookie, Env, Cka) ->
+-spec decode_cookies('undefined' | string(), #ewgi_context{}, #cka{}) -> #ewgi_context{}.
+decode_cookies(undefined, Ctx, _) ->
+    Ctx;
+decode_cookies(Cookie, Ctx, Cka) ->
     CookieValues = smak_cookie:parse_cookie(Cookie),
-    decode_cookies1(proplists:get_value(Cka#cka.cookie_name, CookieValues), Env, Cka).
+    decode_cookies1(proplists:get_value(Cka#cka.cookie_name, CookieValues), Ctx, Cka).
 
-decode_cookies1(undefined, Env, _) ->
-    Env;
-decode_cookies1(Cookie0, Env, Cka) ->
+-spec decode_cookies1('undefined' | string(), #ewgi_context{}, #cka{}) -> #ewgi_context{}.
+decode_cookies1(undefined, Ctx, _) ->
+    Ctx;
+decode_cookies1(Cookie0, Ctx, Cka) ->
     Cookie = cookie_safe_decode(Cookie0),
     case Cookie of
         <<>> ->
-            Env;
+            Ctx;
         Cookie when is_binary(Cookie) ->
             case (Cka#cka.encoder):decode(Cka#cka.key, Cookie, Cka#cka.timeout) of
                 {error, _Reason} ->
                     %% TODO: Warn?
-                    Env;
+                    Ctx;
                 Content when is_binary(Content) ->
                     case (catch(binary_to_term(Content))) of
-                        {'EXIT', _} ->
-                            Env;
                         Values when is_list(Values) ->
-                            case lists:foldl(scan_cookie_content(Cka), Env, Values) of
+                            case lists:foldl(scan_cookie_content(Cka), Ctx, Values) of
                                 {error, _} ->
                                     %% TODO: Warn?
-                                    Env;
-                                ModifiedEnv ->
-                                    ModifiedEnv
+                                    Ctx;
+                                Ctx1 ->
+                                    Ctx1
                             end;
                         _ ->
-                            Env
+                            Ctx
                     end;
                 _ ->
-                    Env
+                    Ctx
             end
     end.
 
 -spec scan_cookie_content(#cka{}) -> function().
 scan_cookie_content(#cka{include_ip=I}) ->
-    F = fun({"REMOTE_USER", U}, Env) ->
-                smak_ewgi:remote_user(Env, U);
-           ({"REMOTE_USER_DATA", D}, Env) ->
-                smak_ewgi:remote_user_data(Env, D);
-           ({"REMOTE_ADDR", SavedAddr}, Env) when I =:= true ->
-                Addr = smak_ewgi:remote_addr(Env),
+    F = fun({"REMOTE_USER", U}, Ctx) ->
+                ewgi_api:remote_user(U, Ctx);
+           ({"REMOTE_USER_DATA", D}, Ctx) ->
+                ewgi_api:remote_user_data(D, Ctx);
+           ({"REMOTE_ADDR", SavedAddr}, Ctx) when I =:= true ->
+                Addr = ewgi_api:remote_addr(Ctx),
                 if SavedAddr =:= Addr ->
-                        Env;
+                        Ctx;
                    true ->
                         error_logger:error_msg("Saved address: ~p, New address: ~p", [SavedAddr, Addr]),
                         {error, invalid_ip_address}
                 end;
-           (_, Env) ->
+           (_, Ctx) ->
                 %% TODO: Warn?
-                Env
+                Ctx
         end,
     F.
 
-add_funs(Env0, Cka) ->
-    lists:foldl(fun({K, V}, Env) ->
-                        smak_ewgi:env_set(Env, K, V)
-                end,
-                Env0,
-                [{?SET_USER_ENV_NAME, set_user(Env0, Cka)},
-                 {?LOGOUT_USER_ENV_NAME, logout_user(Env0, Cka)}]).
+-spec add_funs(#ewgi_context{}, #cka{}) -> #ewgi_context{}.
+add_funs(Ctx0, Cka) ->
+    lists:foldl(fun({K, V}, C) -> ewgi_api:store_data(K, V, C) end,
+                Ctx0,
+                [{?SET_USER_ENV_NAME, set_user(Ctx0, Cka)},
+                 {?LOGOUT_USER_ENV_NAME, logout_user(Ctx0, Cka)}]).
 
-set_user(Env, #cka{include_ip=IncludeIp, cookie_name=CookieName, encoder=Encoder, key=Key, maxlength=M, secure=Sec}) ->
+-spec set_user(#ewgi_context{}, #cka{}) -> function().
+set_user(Ctx, #cka{include_ip=IncludeIp, cookie_name=CookieName, encoder=Encoder, key=Key, maxlength=M, secure=Sec}) ->
     F = fun(UserId, UserData) ->
-                RemoteAddr = if IncludeIp -> smak_ewgi:remote_addr(Env);
+                RemoteAddr = if IncludeIp -> ewgi_api:remote_addr(Ctx);
                                 true -> ?DEFAULT_IP
                              end,
                 CookieData = [{"REMOTE_USER", UserId}, {"REMOTE_USER_DATA", UserData}, {"REMOTE_ADDR", RemoteAddr}],
@@ -134,16 +133,17 @@ set_user(Env, #cka{include_ip=IncludeIp, cookie_name=CookieName, encoder=Encoder
                                 B ->
                                     cookie_safe_encode(B)
                             end,
-                {CurDomain, WildDomain} = get_domains(Env),
+                {CurDomain, WildDomain} = get_domains(Ctx),
                 [simple_cookie(CookieName, CookieVal, Sec),
                  simple_cookie(CookieName, CookieVal, Sec, CurDomain),
                  simple_cookie(CookieName, CookieVal, Sec, WildDomain)]
         end,
     F.
 
-logout_user(Env, #cka{cookie_name=CookieName}) ->
+-spec logout_user(#ewgi_context{}, #cka{}) -> function().
+logout_user(Ctx, #cka{cookie_name=CookieName}) ->
     F = fun() ->
-                {CurDomain, WildDomain} = get_domains(Env),
+                {CurDomain, WildDomain} = get_domains(Ctx),
                 [simple_cookie(CookieName, [], false),
                  simple_cookie(CookieName, [], false, CurDomain),
                  simple_cookie(CookieName, [], false, WildDomain)]
@@ -168,10 +168,11 @@ simple_cookie(Name, Val, Sec, Domain) ->
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
     {"Set-Cookie", io_lib:format("~s=~s; Path=/; Domain=~s~s~s", [Name, Val, Domain, S, Exp])}.
 
-get_domains(Env) ->
-    Cur = case smak_ewgi:http_host(Env) of
+-spec get_domains(#ewgi_context{}) -> {string(), string()}.
+get_domains(Ctx) ->
+    Cur = case ewgi_api:get_header_value("host", Ctx) of
               undefined ->
-                  smak_ewgi:server_name(Env);
+                  ewgi_api:server_name(Ctx);
               H ->
                   H
           end,
