@@ -129,7 +129,7 @@ parse_kv1("realm", V, D) ->
 parse_kv1(_, _, D) -> % ignore extra values
     D.
 
--spec get_map_values(gb_tree(), string(), #conf{}) -> #dres{}.
+-spec get_map_values([string()], string(), #conf{}) -> #dres{}.
 get_map_values(Tokens, Fullpath, #conf{realm=Realm}) ->
     case lists:foldl(fun parse_kv/2, #dres{}, Tokens) of
         #dres{realm=Realm, uri=Uri}=D ->
