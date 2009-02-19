@@ -117,12 +117,12 @@ get_map_values(AuthMap, Fullpath) ->
 compute([], _, _) ->
     unauthorized();
 compute(Ha1, Method, D) when is_record(D, dres) ->
-    Ha2 = smak_hex:to_hex(erlang:md5(io_lib:format("~s:~s", [Method, D#dres.uri]))),
+    Ha2 = smak_hex:to_hex(erlang:md5([Method, $:, D#dres.uri])),
     Chk = case D#dres.qop of
               [] ->
-                  smak_hex:to_hex(erlang:md5(io_lib:format("~s:~s:~s", [Ha1, D#dres.nonce, Ha2])));
+                  smak_hex:to_hex(erlang:md5([Ha1, $:, D#dres.nonce, $:, Ha2]));
               _ ->
-                  smak_hex:to_hex(erlang:md5(io_lib:format("~s:~s:~s:~s:~s:~s", [Ha1, D#dres.nonce, D#dres.nc, D#dres.cnonce, D#dres.qop, Ha2])))
+                  smak_hex:to_hex(erlang:md5([Ha1, $:, D#dres.nonce, $:, D#dres.nc, $:, D#dres.cnonce, $:, D#dres.qop, $:, Ha2]))
           end,
     case D#dres.response of
         Chk ->
@@ -193,7 +193,7 @@ unauthorized(Stale) ->
     Opaque = smak_hex:to_hex(erlang:md5(io_lib:format("~.6f:~.16f", [Now, Rand]))),
     NonceSet(Nonce, undefined),
     Head = get_digest_head(Nonce, Opaque, Stale),
-    BR = io_lib:format("Digest ~s", [Head]),
+    BR = ["Digest ", Head],
     H = [{"WWW-Authenticate", BR}],
     smak_http_status:unauthorized([], H, []).
 
@@ -213,4 +213,5 @@ get_digest_head_list({Nonce, Opaque}, false) ->
 -spec(hpair/1 :: ({string(), string()}) -> string()).
 
 hpair({Key, Val}) ->
-    io_lib:format("~s=\"~s\"", [Key, Val]).
+    [Key, $=, $\", Val, $\"].
+
