@@ -12,9 +12,6 @@
 
 -export([init/3]).
 
-%% Behaviours may be introduced to EWGI
-%%-behaviour(ewgi_application).
-
 -include("smak.hrl").
 
 -compile(export_all).
