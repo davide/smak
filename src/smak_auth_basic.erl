@@ -36,9 +36,7 @@ init(Application, Realm, AuthFunc) when ?IS_EWGI_APPLICATION(Application),
                                 %% Success; serve the app
                                 ewgi_application:run(Application, Ctx);
                             App when ?IS_EWGI_APPLICATION(App) ->
-                                ewgi_application:run(App, Ctx0);
-                            Other -> % should be a ewgi_context
-                                Other
+                                ewgi_application:run(App, Ctx0)
                         end;
                     _ -> % Remote user already defined
                         ewgi_application:run(Application, Ctx0)
