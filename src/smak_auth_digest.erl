@@ -30,16 +30,14 @@
 
 -include("smak.hrl").
 
--type(dres() :: {string(), string(), string(), string(), string(), string(), string()}).
-
 -record(dres, {
-          username,
-          uri,
-          nonce,
-          response,
-          qop,
-          cnonce,
-          nc
+          username :: string(),
+          uri :: string(),
+          nonce :: string(),
+          response :: string(),
+          qop :: string(),
+          cnonce :: string(),
+          nc :: string()
           }).
 
 %% External API
@@ -91,7 +89,7 @@ authenticate(Env) ->
     end.
 
 
--spec(get_map_values/2 :: (gb_tree(), string()) -> dres()).
+-spec(get_map_values/2 :: (gb_tree(), string()) -> #dres{}).
              
 get_map_values(AuthMap, Fullpath) ->
     Username = gb_trees:get("username", AuthMap),
@@ -114,7 +112,7 @@ get_map_values(AuthMap, Fullpath) ->
           cnonce=Cnonce,
           nc=Nc}.
 
--spec(compute/3 :: (string(), string(), dres()) -> string() | ewgi_app()).
+-spec(compute/3 :: (string(), string(), #dres{}) -> string() | ewgi_app()).
              
 compute([], _, _) ->
     unauthorized();
