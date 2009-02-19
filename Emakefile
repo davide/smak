@@ -10,6 +10,7 @@
 % Compile smak files
 {["src/*"],
  [{i, "include"},
+  {i, "deps/ewgi/include"},
   {outdir, "ebin"},
   debug_info]
 }.

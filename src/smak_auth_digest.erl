@@ -90,8 +90,6 @@ authenticate(Env) ->
             unauthorized()
     end.
 
--type(gb_tree_node() :: {_,_,_,_} | 'nil').
--type(gb_tree() :: {non_neg_integer(), gb_tree_node()}).
 
 -spec(get_map_values/2 :: (gb_tree(), string()) -> dres()).
              
