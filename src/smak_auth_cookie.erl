@@ -38,8 +38,7 @@
 
 %% @spec init(Application::ewgi_app(), Key::binary(), Options::proplist()) -> ewgi_app()
 %% @doc Initializes authentication middleware and returns the appropriate application.
--spec(init/3 :: (ewgi_app(), binary(), proplist()) -> ewgi_app()).
-
+-spec init(ewgi_app(), binary(), proplist()) -> ewgi_app().
 init(Application, Key, Options) when is_binary(Key), size(Key) >= 16 ->
     case populate_record(Options, #cka{application=Application, key=Key}) of
         Cka when is_record(Cka, cka) ->
@@ -95,6 +94,7 @@ decode_cookies1(Cookie0, Env, Cka) ->
             end
     end.
 
+-spec scan_cookie_content(#cka{}) -> function().
 scan_cookie_content(#cka{include_ip=I}) ->
     F = fun({"REMOTE_USER", U}, Env) ->
                 smak_ewgi:remote_user(Env, U);
@@ -150,6 +150,7 @@ logout_user(Env, #cka{cookie_name=CookieName}) ->
         end,
     F.
 
+-spec simple_cookie(string(), string() | binary(), bool()) -> {string(), iolist()}.
 simple_cookie(Name, Val, Sec) when is_binary(Val) ->
     simple_cookie(Name, binary_to_list(Val), Sec);
 simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
@@ -157,6 +158,7 @@ simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
     {"Set-Cookie", [Name, $=, Val, "; Path=/", S, Exp]}.
 
+-spec simple_cookie(string(), binary() | string(), bool(), binary() | string()) -> {string(), iolist()}.
 simple_cookie(Name, Val, Sec, Domain) when is_binary(Val) ->
     simple_cookie(Name, binary_to_list(Val), Sec, Domain);
 simple_cookie(Name, Val, Sec, Domain) when is_binary(Domain) ->
@@ -176,6 +178,7 @@ get_domains(Env) ->
     Wild = [$.|Cur],
     {Cur, Wild}.
 
+-spec cookie_safe_encode(binary()) -> binary().
 cookie_safe_encode(Bin) when is_binary(Bin) ->
     Enc = binary_to_list(base64:encode(Bin)),
     list_to_binary(cookie_safe_encode1(Enc, [])).
