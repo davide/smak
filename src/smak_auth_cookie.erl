@@ -155,7 +155,7 @@ simple_cookie(Name, Val, Sec) when is_binary(Val) ->
 simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
     S = if Sec -> "; Secure"; true -> [] end,
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
-    {"Set-Cookie", io_lib:format("~s=~s; Path=/~s~s", [Name, Val, S, Exp])}.
+    {"Set-Cookie", [Name, $=, Val, "; Path=/", S, Exp]}.
 
 simple_cookie(Name, Val, Sec, Domain) when is_binary(Val) ->
     simple_cookie(Name, binary_to_list(Val), Sec, Domain);
