@@ -23,10 +23,10 @@
 %% Bicking, Clark C. Evans, and contributors and released under the MIT
 %% license. See: http://pythonpaste.org/
 
--module(smak_auth_digest, [Application, Realm, AuthFunc, NonceGet, NonceSet]).
+-module(smak_auth_digest).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([handle_request/2]).
+-export([init/5]).
 
 -include("smak.hrl").
 
@@ -40,58 +40,64 @@
           nc :: string()
           }).
 
-%% External API
+-record(conf, {
+          realm :: string(),
+          auth :: function(),
+          nget :: function(),
+          nset :: function()
+         }).
 
-%% @spec handle_request(ewgi_env(), ewgi_start_response()) -> ewgi_response()
-%% @doc Checks for digest authentication and executes the application if
-%% authentication is successful. Otherwise, gives an error.
--spec(handle_request/2 :: (ewgi_env(), ewgi_start_response()) -> ewgi_response()).
-              
-handle_request(Env, StartResp) ->
-    case smak_ewgi:remote_user(Env) of
-        undefined ->
-            case authenticate(Env) of
-                Result when is_list(Result) ->
-                    Env1 = smak_ewgi:auth_type(Env, "digest"),
-                    Env2 = smak_ewgi:remote_user(Env1, Result),
-                    smak_ewgi:call_application(Application, Env2, StartResp);
-                F when is_function(F, 2) ->
-                    F(Env, StartResp)
-            end;
-        _ ->
-            smak_ewgi:call_application(Application, Env, StartResp)
-    end.
+%% @spec init(ewgi_app(), string(), function(), function(), function()) -> ewgi_app()
+%% @doc Creates an application which checks for digest authentication
+%% and executes the application if authentication is
+%% successful. Otherwise, gives an error.
+-spec init(ewgi_app(), string(), function(), function(), function()) -> ewgi_app().
+init(Application, Realm, AuthFunc, NonceGet, NonceSet) ->
+    Conf = #conf{realm=Realm, auth=AuthFunc, nget=NonceGet, nset=NonceSet},
+    F = fun(Ctx0) ->
+                case ewgi_api:remote_user(Ctx0) of
+                    undefined ->
+                        case authenticate(Ctx0, Conf) of
+                            Result when is_list(Result) ->
+                                Ctx1 = ewgi_api:auth_type("digest", Ctx0),
+                                Ctx = ewgi_api:remote_user(Result, Ctx1),
+                                ewgi_application:run(Application, Ctx);
+                            App when ?IS_EWGI_APPLICATION(App) ->
+                                ewgi_application:run(App, Ctx0)
+                        end;
+                    _ ->
+                        ewgi_application:run(Application, Ctx0)
+                end
+        end,
+    F.
 
--spec(authenticate/1 :: (ewgi_env()) -> string() | ewgi_app()).
-             
-authenticate(Env) ->
-    Method = smak_ewgi:request_method(Env),
-    Fullpath = smak_ewgi:script_name(Env) ++ smak_ewgi:path_info(Env),
-    case smak_ewgi:env_get(Env, "HTTP_AUTHORIZATION") of
+-spec authenticate(#ewgi_context{}, #conf{}) -> string() | ewgi_app().
+authenticate(Ctx0, Conf) ->
+    Method = ewgi_api:request_method(Ctx0),
+    Fullpath = ewgi_api:script_name(Ctx0) ++ ewgi_api:path_info(Ctx0),
+    case ewgi_api:get_header_value("authorization", Ctx0) of
         Authorization when is_list(Authorization) ->
             [AuthMethod, Auth] = smak_string:split(Authorization, $\ , 1),
             case string:to_lower(AuthMethod) of
                 "digest" ->
                     Tokens = smak_string:split(Auth, ", "),
                     AuthMap = lists:foldl(fun parse_kv/2, gb_trees:empty(), Tokens),
-                    case (catch get_map_values(AuthMap, Fullpath)) of
+                    case (catch get_map_values(AuthMap, Fullpath, Conf)) of
                         D when is_record(D, dres) ->
-                            Ha1 = AuthFunc(Env, Realm, D#dres.username),
-                            compute(Ha1, Method, D);
+                            Ha1 = (Conf#conf.auth)(Ctx0, Conf#conf.realm, D#dres.username),
+                            compute(Ha1, Method, D, Conf);
                         _ ->
-                            unauthorized()
+                            unauthorized(Conf)
                     end;
                 _ ->
-                    unauthorized()
+                    unauthorized(Conf)
             end;
         _ ->
-            unauthorized()
+            unauthorized(Conf)
     end.
 
-
--spec(get_map_values/2 :: (gb_tree(), string()) -> #dres{}).
-             
-get_map_values(AuthMap, Fullpath) ->
+-spec get_map_values(gb_tree(), string(), #conf{}) -> #dres{}.
+get_map_values(AuthMap, Fullpath, #conf{realm=Realm}) ->
     Username = gb_trees:get("username", AuthMap),
     Uri = gb_trees:get("uri", AuthMap),
     Nonce = gb_trees:get("nonce", AuthMap),
@@ -112,11 +118,10 @@ get_map_values(AuthMap, Fullpath) ->
           cnonce=Cnonce,
           nc=Nc}.
 
--spec(compute/3 :: (string(), string(), #dres{}) -> string() | ewgi_app()).
-             
-compute([], _, _) ->
-    unauthorized();
-compute(Ha1, Method, D) when is_record(D, dres) ->
+-spec compute(string(), string(), #dres{}, #conf{}) -> string() | ewgi_app().
+compute([], _, _, Conf) ->
+    unauthorized(Conf);
+compute(Ha1, Method, D, Conf) when is_record(D, dres) ->
     Ha2 = smak_hex:to_hex(erlang:md5([Method, $:, D#dres.uri])),
     Chk = case D#dres.qop of
               [] ->
@@ -126,22 +131,21 @@ compute(Ha1, Method, D) when is_record(D, dres) ->
           end,
     case D#dres.response of
         Chk ->
-            Pnc = NonceGet(D#dres.nonce),
+            Pnc = (Conf#conf.nget)(D#dres.nonce),
             if
                 D#dres.nc =< Pnc ->
-                    NonceSet(D#dres.nonce, undefined),
+                    (Conf#conf.nset)(D#dres.nonce, undefined),
                     unauthorized(true);
                 true ->
-                    NonceSet(D#dres.nonce, D#dres.nc),
+                    (Conf#conf.nset)(D#dres.nonce, D#dres.nc),
                     D#dres.username
             end;
         _ ->
-            NonceSet(D#dres.nonce, undefined),
-            unauthorized()
+            (Conf#conf.nset)(D#dres.nonce, undefined),
+            unauthorized(Conf)
     end.
 
--spec(assert_valid_authpath/2 :: (string(), string()) -> 'ok' | {'error', 'not_in_string'}).
-
+-spec assert_valid_authpath(string(), string()) -> 'ok' | {'error', 'not_in_string'}.
 assert_valid_authpath(A, F) ->
     A1 = lists:takewhile(fun($\?) -> false; (_) -> true end, A),
     case string:str(F, A1) of
@@ -151,8 +155,7 @@ assert_valid_authpath(A, F) ->
             ok
     end.
 
--spec(assert_valid_qop/1 :: (list()) -> 'ok' | 'invalid').
-
+-spec assert_valid_qop(list()) -> 'ok' | 'invalid'.
 assert_valid_qop([]) ->
     ok;
 assert_valid_qop("auth") ->
@@ -160,8 +163,7 @@ assert_valid_qop("auth") ->
 assert_valid_qop(_) ->
     invalid.
 
--spec(lookup_default/3 :: (any(), gb_tree(), T) -> any() | T).
-
+-spec lookup_default(any(), gb_tree(), T) -> any() | T.
 lookup_default(Key, Tree, Default) ->
     case gb_trees:lookup(Key, Tree) of
         none ->
@@ -170,48 +172,42 @@ lookup_default(Key, Tree, Default) ->
             V
     end.
 
--spec(parse_kv/2 :: (string(), gb_tree()) -> gb_tree()).
-
+-spec parse_kv(string(), gb_tree()) -> gb_tree().
 parse_kv(Str, Tree) ->
     [K, V] = smak_string:split(Str, $\=, 1),
     gb_trees:enter(smak_string:strip(K),
                    smak_string:strip(smak_string:strip(V), both, "\""),
                    Tree).
 
--spec(unauthorized/0 :: () -> ewgi_app()).
+-spec unauthorized(#conf{}) -> ewgi_app().
+unauthorized(Conf) ->
+    unauthorized(false, Conf).
 
-unauthorized() ->
-    unauthorized(false).
-
--spec(unauthorized/1 :: (bool()) -> ewgi_app()).
-
-unauthorized(Stale) ->
+-spec unauthorized(bool(), #conf{}) -> ewgi_app().
+unauthorized(Stale, Conf) ->
     {NowDt, NowMs} = smak_calendar:now_utc_ms(),
     Now = smak_calendar:now_to_unix_ts(NowDt, NowMs),
     Rand = smak_random:uniform(),
     Nonce = smak_hex:to_hex(erlang:md5(io_lib:format("~.6f:~.16f", [Now, Rand]))),
     Opaque = smak_hex:to_hex(erlang:md5(io_lib:format("~.6f:~.16f", [Now, Rand]))),
-    NonceSet(Nonce, undefined),
-    Head = get_digest_head(Nonce, Opaque, Stale),
+    (Conf#conf.nset)(Nonce, undefined),
+    Head = get_digest_head(Nonce, Opaque, Stale, Conf),
     BR = ["Digest ", Head],
     H = [{"WWW-Authenticate", BR}],
     smak_http_status:unauthorized([], H, []).
 
--spec(get_digest_head/3 :: (string(), string(), bool()) -> string()).
-
-get_digest_head(Nonce, Opaque, Stale) ->
-    Pairs = lists:map(fun hpair/1, get_digest_head_list({Nonce, Opaque}, Stale)),
+-spec get_digest_head(string(), string(), bool(), #conf{}) -> string().
+get_digest_head(Nonce, Opaque, Stale, Conf) ->
+    Pairs = lists:map(fun hpair/1, get_digest_head_list({Nonce, Opaque}, Stale, Conf)),
     string:join(Pairs, ", ").
 
--spec(get_digest_head_list/2 :: ({string(), string()}, bool()) -> [{string(), string()}]).
-             
-get_digest_head_list(A, true) ->
-    [{"stale", "true"}|get_digest_head_list(A, false)];
-get_digest_head_list({Nonce, Opaque}, false) ->
-    [{"realm", Realm}, {"qop", "auth"}, {"nonce", Nonce}, {"opaque", Opaque}].
+-spec get_digest_head_list({string(), string()}, bool(), #conf{}) -> [{string(), string()}].
+get_digest_head_list(A, true, Conf) ->
+    [{"stale", "true"}|get_digest_head_list(A, false, Conf)];
+get_digest_head_list({Nonce, Opaque}, false, Conf) ->
+    [{"realm", Conf#conf.realm}, {"qop", "auth"}, {"nonce", Nonce}, {"opaque", Opaque}].
 
--spec(hpair/1 :: ({string(), string()}) -> string()).
-
+-spec hpair({string(), string()}) -> string().
 hpair({Key, Val}) ->
     [Key, $=, $\", Val, $\"].
 
