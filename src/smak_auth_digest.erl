@@ -35,9 +35,10 @@
           uri :: string(),
           nonce :: string(),
           response :: string(),
-          qop :: string(),
-          cnonce :: string(),
-          nc :: string()
+          qop=[] :: string(),
+          cnonce=[] :: string(),
+          nc="00000000" :: string(),
+          realm :: string()
           }).
 
 -record(conf, {
@@ -81,8 +82,7 @@ authenticate(Ctx0, Conf) ->
             case string:to_lower(AuthMethod) of
                 "digest" ->
                     Tokens = smak_string:split(Auth, ", "),
-                    AuthMap = lists:foldl(fun parse_kv/2, gb_trees:empty(), Tokens),
-                    case (catch get_map_values(AuthMap, Fullpath, Conf)) of
+                    case (catch get_map_values(Tokens, Fullpath, Conf)) of
                         D when is_record(D, dres) ->
                             Ha1 = (Conf#conf.auth)(Ctx0, Conf#conf.realm, D#dres.username),
                             compute(Ha1, Method, D, Conf);
@@ -96,27 +96,52 @@ authenticate(Ctx0, Conf) ->
             unauthorized(Conf)
     end.
 
+-spec parse_kv(string(), #dres{}) -> #dres{}.
+parse_kv(Str, D) ->
+    [K, V] = smak_string:split(Str, $\=, 1),
+    parse_kv1(smak_string:strip(K),
+              smak_string:strip(smak_string:strip(V), both, "\""),
+              D).
+
+-spec parse_kv1(string(), any(), #dres{}) -> #dres{}.
+parse_kv1("username", V, D) ->
+    D#dres{username=V};
+parse_kv1("uri", V, D) ->
+    D#dres{uri=V};
+parse_kv1("nonce", [], _) ->
+    throw({error, invalid_nonce});
+parse_kv1("nonce", V, D) ->
+    D#dres{nonce=V};
+parse_kv1("response", V, D) ->
+    D#dres{response=V};
+parse_kv1("qop", V, D) when V =:= []; V =:= "auth" ->
+    D#dres{qop=V};
+parse_kv1("qop", _, _) ->
+    throw({error, invalid_qop});
+parse_kv1("cnonce", V, D) ->
+    D#dres{cnonce=V};
+parse_kv1("nc", [], _) ->
+    throw({error, invalid_nc});
+parse_kv1("nc", V, D) ->
+    D#dres{nc=V};
+parse_kv1("realm", V, D) ->
+    D#dres{realm=V};
+parse_kv1(_, _, D) -> % ignore extra values
+    D.
+
 -spec get_map_values(gb_tree(), string(), #conf{}) -> #dres{}.
-get_map_values(AuthMap, Fullpath, #conf{realm=Realm}) ->
-    Username = gb_trees:get("username", AuthMap),
-    Uri = gb_trees:get("uri", AuthMap),
-    Nonce = gb_trees:get("nonce", AuthMap),
-    Response = gb_trees:get("response", AuthMap),
-    Qop = lookup_default("qop", AuthMap, []),
-    Cnonce = lookup_default("cnonce", AuthMap, []),
-    Nc = lookup_default("nc", AuthMap, "00000000"),
-    ok = assert_valid_qop(Qop),
-    ok = case Nonce of [] -> {error, invalid_nonce}; _ -> ok end,
-    ok = case Nc of [] -> {error, invalid_nc}; _ -> ok end,
-    Realm = gb_trees:get("realm", AuthMap),
-    ok = assert_valid_authpath(Uri, Fullpath),
-    #dres{username=Username,
-          uri=Uri,
-          nonce=Nonce,
-          response=Response,
-          qop=Qop,
-          cnonce=Cnonce,
-          nc=Nc}.
+get_map_values(Tokens, Fullpath, #conf{realm=Realm}) ->
+    case lists:foldl(fun parse_kv/2, #dres{}, Tokens) of
+        #dres{realm=Realm, uri=Uri}=D ->
+            case assert_valid_authpath(Uri, Fullpath) of
+                ok ->
+                    D;
+                Err ->
+                    throw(Err)
+            end;
+        _ ->
+            throw({error, invalid_realm})
+    end.
 
 -spec compute(string(), string(), #dres{}, #conf{}) -> string() | ewgi_app().
 compute([], _, _, Conf) ->
@@ -154,30 +179,6 @@ assert_valid_authpath(A, F) ->
         _ ->
             ok
     end.
-
--spec assert_valid_qop(list()) -> 'ok' | 'invalid'.
-assert_valid_qop([]) ->
-    ok;
-assert_valid_qop("auth") ->
-    ok;
-assert_valid_qop(_) ->
-    invalid.
-
--spec lookup_default(any(), gb_tree(), T) -> any() | T.
-lookup_default(Key, Tree, Default) ->
-    case gb_trees:lookup(Key, Tree) of
-        none ->
-            Default;
-        {value, V} ->
-            V
-    end.
-
--spec parse_kv(string(), gb_tree()) -> gb_tree().
-parse_kv(Str, Tree) ->
-    [K, V] = smak_string:split(Str, $\=, 1),
-    gb_trees:enter(smak_string:strip(K),
-                   smak_string:strip(smak_string:strip(V), both, "\""),
-                   Tree).
 
 -spec unauthorized(#conf{}) -> ewgi_app().
 unauthorized(Conf) ->
