@@ -152,7 +152,8 @@ compute(Ha1, Method, D, Conf) when is_record(D, dres) ->
               [] ->
                   smak_hex:to_hex(erlang:md5([Ha1, $:, D#dres.nonce, $:, Ha2]));
               _ ->
-                  smak_hex:to_hex(erlang:md5([Ha1, $:, D#dres.nonce, $:, D#dres.nc, $:, D#dres.cnonce, $:, D#dres.qop, $:, Ha2]))
+                  smak_hex:to_hex(erlang:md5([Ha1, $:, D#dres.nonce, $:, D#dres.nc, $:,
+                                              D#dres.cnonce, $:, D#dres.qop, $:, Ha2]))
           end,
     case D#dres.response of
         Chk ->
@@ -160,7 +161,7 @@ compute(Ha1, Method, D, Conf) when is_record(D, dres) ->
             if
                 D#dres.nc =< Pnc ->
                     (Conf#conf.nset)(D#dres.nonce, undefined),
-                    unauthorized(true);
+                    unauthorized(true, Conf);
                 true ->
                     (Conf#conf.nset)(D#dres.nonce, D#dres.nc),
                     D#dres.username
