@@ -28,6 +28,8 @@
 %% @type ewgi_start_response() = function()
 -type(ewgi_start_response() :: fun((ewgi_status(), ewgi_response_headers()) -> ewgi_write())).
 
+-define(IS_EWGI_APPLICATION(A), is_function(A, 1)).
+
 %% Record representing each of the parts of a well-formed URL.
 -record(urlparts, {
           scheme=[],
