@@ -28,9 +28,6 @@
 
 -export([handle_request/2]).
 
-%% Behaviours may be introduced to EWGI
-%%-behaviour(ewgi_application).
-
 -include("smak.hrl").
 
 -type(dres() :: {string(), string(), string(), string(), string(), string(), string()}).

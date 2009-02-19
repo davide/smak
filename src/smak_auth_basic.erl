@@ -18,9 +18,6 @@
 
 -export([init/1, handle_request/2]).
 
-%% Behaviours may be introduced to EWGI
-%%-behaviour(ewgi_application).
-
 -include("smak.hrl").
 
 %% External API
