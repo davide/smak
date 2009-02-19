@@ -13,72 +13,65 @@
 %% Bicking, Clark C. Evans, and contributors and released under the MIT
 %% license. See: http://pythonpaste.org/
 
--module(smak_auth_basic, [Application, Realm, AuthFunc]).
+-module(smak_auth_basic).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([init/1, handle_request/2]).
+-export([init/3]).
 
 -include("smak.hrl").
 
-%% External API
-
-%% @spec init(any()) -> ok
-%% @doc Initializes authentication middleware.
--spec(init/1 :: (any()) -> ok).
-             
-init(_) ->
-    ok.
-
-%% @spec handle_request(ewgi_env(), ewgi_start_response()) -> ewgi_response()
-%% @doc Checks for basic authentication and executes the application if
-%% authentication is successful. Otherwise, gives an error.
--spec(handle_request/2 :: (ewgi_env(), ewgi_start_response()) -> ewgi_response()).
-              
-handle_request(Env, StartResp) ->
-    case smak_ewgi:remote_user(Env) of
-        undefined ->
-            case authenticate(Env) of
-                Result when is_list(Result) ->
-                    Env1 = smak_ewgi:auth_type(Env, "basic"),
-                    Env2 = smak_ewgi:remote_user(Env1, Result),
-                    %% Authentication was successful; serve the app
-                    smak_ewgi:call_application(Application, Env2, StartResp);
-                F when is_function(F) ->
-                    F(Env, StartResp)
-            end;
-        _ -> % Remote user already defined
-            smak_ewgi:call_application(Application, Env, StartResp)
-    end.
+%% @spec init(ewgi_app(), Realm::string(), Auth::function()) -> ewgi_app().
+%% @doc Initializes basic authentication middleware.
+-spec init(ewgi_app(), string(), function()) -> ewgi_app().
+init(Application, Realm, AuthFunc) when ?IS_EWGI_APPLICATION(Application),
+                                        is_list(Realm),
+                                        is_function(AuthFunc, 3) ->
+    F = fun(Ctx0) ->
+                case ewgi_api:remote_user(Ctx0) of
+                    undefined ->
+                        case authenticate(Ctx0, Realm, AuthFunc) of
+                            Result when is_list(Result) ->
+                                Ctx1 = ewgi_api:auth_type("basic", Ctx0),
+                                Ctx = ewgi_api:remote_user(Result, Ctx1),
+                                %% Success; serve the app
+                                ewgi_application:run(Application, Ctx);
+                            App when ?IS_EWGI_APPLICATION(App) ->
+                                ewgi_application:run(App, Ctx0);
+                            Other -> % should be a ewgi_context
+                                Other
+                        end;
+                    _ -> % Remote user already defined
+                        ewgi_application:run(Application, Ctx0)
+                end
+        end,
+    F.
 
 %% Tests the environment for authorization and either returns the
 %% authenticated username or an ewgi application which gives an
 %% "Unauthorized" response.
--spec(authenticate/1 :: (ewgi_env()) -> string() | ewgi_app()).
-
-authenticate(Env) ->
-    case smak_ewgi:env_get(Env, "HTTP_AUTHORIZATION") of
+-spec authenticate(#ewgi_context{}, string(), function()) -> ewgi_app() | string().
+authenticate(Ctx0, Realm, AuthFunc) ->
+    case ewgi_api:get_header_value("authorization", Ctx0) of
         Authorization when is_list(Authorization) ->
             [AuthMethod, Auth] = smak_string:split(Authorization, $\ , 1),
             case string:to_lower(AuthMethod) of
                 "basic" ->
                     Auth1 = base64:decode_to_string(smak_string:strip(Auth)),
                     [Username, Password] = smak_string:split(Auth1, $:, 1),
-                    case AuthFunc(Env, Username, Password) of
+                    case AuthFunc(Ctx0, Username, Password) of
                         true -> Username;
-                        false -> unauthorized(Env)
+                        false -> unauthorized(Ctx0, Realm)
                     end;
                 _ ->
-                    unauthorized(Env)
+                    unauthorized(Ctx0, Realm)
             end;
         _ ->
-            unauthorized(Env)
+            unauthorized(Ctx0, Realm)
     end.
 
 %% Prompts for basic authentication giving a 401 Unauthorized response.
--spec(unauthorized/1 :: (ewgi_env()) -> ewgi_app()).
-
-unauthorized(_Env) ->
-    H = [{"WWW-Authenticate",
-          io_lib:format("Basic realm=\"~s\"", [Realm])}],
+-spec unauthorized(#ewgi_context{}, Realm::string()) -> ewgi_app().
+unauthorized(_Ctx0, Realm) ->
+    H = [{"WWW-Authenticate", io_lib:format("Basic realm=\"~s\"", [Realm])}],
     smak_http_status:unauthorized([], H, []).
 
