@@ -106,7 +106,9 @@ resolve1(#croute{route=#route{subs=S}, regex=R, defaults=D}, Url) ->
         {match, L} when is_list(L) ->
             [resolve_default(I, D) || I <- lists:zip(S, L)];
         nomatch ->
-            nomatch
+            nomatch;
+        match ->
+            []
     end.
 
 -spec resolve_default(pmatch(), tuple()) -> pmatch().
