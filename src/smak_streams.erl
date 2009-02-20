@@ -256,7 +256,7 @@ filter(P, S) when is_function(P, 1), is_function(S, 0) ->
 %% in S2. (P can be read as "less than".)
 -spec(merge/3 :: (function(), function(), function()) -> stream()).
 
-merge(P, S1, S2) when is_function(P, 1), is_function(S1, 0), is_function(S2, 0) ->
+merge(P, S1, S2) when is_function(P, 2), is_function(S1, 0), is_function(S2, 0) ->
     ?DELAY(case ?FORCE(S1) of
                {H1, T1} ->
                    case ?FORCE(S2) of
