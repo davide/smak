@@ -70,6 +70,6 @@ authenticate(Ctx0, Realm, AuthFunc) ->
 %% Prompts for basic authentication giving a 401 Unauthorized response.
 -spec unauthorized(#ewgi_context{}, Realm::string()) -> ewgi_app().
 unauthorized(_Ctx0, Realm) ->
-    H = [{"WWW-Authenticate", io_lib:format("Basic realm=\"~s\"", [Realm])}],
+    H = [{"WWW-Authenticate", ["Basic realm=\"", Realm, "\""]}],
     smak_http_status:unauthorized([], H, []).
 
