@@ -11,7 +11,7 @@
 -module(smak_http_response).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([init/2, init/3]).
+-export([init/2, init/3, replace_header/3]).
 
 -include("smak.hrl").
 
@@ -82,3 +82,26 @@ parse(L) ->
                    (Unk, _) -> 
                         throw({error, {unknown_param, Unk}})
                 end, #p{}, L).
+
+%% @spec replace_header(proplist(), string(), string()) -> {string(), proplist()}
+%% @doc Replace the first occurrence of the header specified with the
+%% value. If the header does not exist, add a new one. Note that this method
+%% should not be used for header names such as "set-cookie" which may appear
+%% more than once in the headers. Returns the new header list and the
+%% previous value (if exists).
+-spec replace_header(ewgi_header_list(), string(), string()) -> {string(), ewgi_header_list()}.
+replace_header(Headers, Name, Value) ->
+    Name1 = string:to_lower(Name),
+    replace_header1(Headers, Name1, Value, [], []).
+
+replace_header1([], _, _, Prev, Acc) ->
+    {Prev, lists:reverse(Acc)};
+replace_header1([{PrevName, PrevValue}|T], Name, Value, [], Acc) ->
+    case string:to_lower(PrevName) of
+        Name ->
+            replace_header1(T, Name, Value, PrevValue, [{Name, Value}|Acc]);
+        _ ->
+            replace_header1(T, Name, Value, [], [{PrevName, PrevValue}|Acc])
+    end;
+replace_header1([H|T], Name, Value, Prev, Acc) ->
+    replace_header1(T, Name, Value, Prev, [H|Acc]).

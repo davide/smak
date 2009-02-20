@@ -689,12 +689,12 @@ prepare_content(Ctx, Err) ->
 prepare_content1(Accept, 0, Ctx, Err) ->
     prepare_content2(Accept, string:str(Accept, "*/*"), Ctx, Err);
 prepare_content1(_, _, Ctx, #status{headers=Headers}=Err) ->
-    {_, H1} = smak_response:replace_header(Headers, "content-type", "text/html; charset=utf8"),
+    {_, H1} = smak_http_response:replace_header(Headers, "content-type", "text/html; charset=utf8"),
     C = html_output(Ctx, Err),
     {H1, C}.
 
 prepare_content2(_, 0, Ctx, #status{headers=Headers}=Err) ->
-    {_, H1} = smak_response:replace_header(Headers, "content-type", "text/plain; charset=utf8"),
+    {_, H1} = smak_http_response:replace_header(Headers, "content-type", "text/plain; charset=utf8"),
     C = plain_output(Ctx, Err),
     {H1, C};
 prepare_content2(Accept, N, Ctx, Err) ->
