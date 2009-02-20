@@ -18,16 +18,15 @@
 -module(smak_hex).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([test/0, to_hex/1, to_bin/1, to_int/1, dehex/1, hexdigit/1]).
+-export([test/0, to_hex/1, to_bin/1, to_int/1, unhexdigit/1, hexdigit/1]).
 
 -include("smak.hrl").
 
 -import(erlang, [list_to_integer/2]).
 
-%% @spec to_hex(integer() | iolist()) -> string()
+%% @spec to_hex(integer() | iolist() | binary()) -> string()
 %% @doc Convert an iolist to a hexadecimal string.
--spec(to_hex/1 :: (integer() | iolist()) -> string()).
-
+-spec to_hex(integer() | iolist() | binary()) -> string().
 to_hex(0) ->
     "0";
 to_hex(I) when is_integer(I), I > 0 ->
@@ -36,15 +35,13 @@ to_hex(L) when is_list(L); is_binary(L) ->
     to_hex(iolist_to_binary(L), []).
 
 %% Helper methods
--spec(to_hex/2 :: (binary(), list()) -> string()).
-
+-spec to_hex(binary(), list()) -> string().
 to_hex(<<>>, Acc) ->
     lists:reverse(Acc);
 to_hex(<<C1:4, C2:4, Rest/binary>>, Acc) ->
     to_hex(Rest, [hexdigit(C2), hexdigit(C1) | Acc]).
 
--spec(to_hex_int/2 :: (integer(), list()) -> string()).
-             
+-spec to_hex_int(integer(), list()) -> string().
 to_hex_int(0, Acc) ->
     Acc;
 to_hex_int(I, Acc) ->
@@ -52,41 +49,36 @@ to_hex_int(I, Acc) ->
 
 %% @spec to_bin(string()) -> binary()
 %% @doc Convert a hexadecimal string to a binary.
--spec(to_bin/1 :: (string()) -> binary()).
-
+-spec to_bin(string()) -> binary().
 to_bin(L) ->
     to_bin(L, []).
 
 %% Helper method
--spec(to_bin/2 :: (list(), list()) -> binary()).
-
+-spec to_bin(list(), list()) -> binary().
 to_bin([], Acc) ->
     iolist_to_binary(lists:reverse(Acc));
 to_bin([C1, C2 | Rest], Acc) ->
-    to_bin(Rest, [(dehex(C1) bsl 4) bor dehex(C2) | Acc]).
+    to_bin(Rest, [(unhexdigit(C1) bsl 4) bor unhexdigit(C2) | Acc]).
 
 %% @spec to_int(string()) -> integer()
 %% @doc Convert a hexadecimal string to an integer.
--spec(to_int/1 :: (string()) -> integer()).
-
+-spec to_int(string()) -> integer().
 to_int(L) ->
     list_to_integer(L, 16).
 
-%% @spec dehex(char()) -> integer()
+%% @spec unhexdigit(char()) -> integer()
 %% @doc Convert a hex digit to its integer value.
--spec(dehex/1 :: (char()) -> integer()).
-
-dehex(C) when C >= $0, C =< $9 ->
+-spec unhexdigit(char()) -> integer().
+unhexdigit(C) when C >= $0, C =< $9 ->
     C - $0;
-dehex(C) when C >= $a, C =< $f ->
+unhexdigit(C) when C >= $a, C =< $f ->
     C - $a + 10;
-dehex(C) when C >= $A, C =< $F ->
+unhexdigit(C) when C >= $A, C =< $F ->
     C - $A + 10.
 
 %% @spec hexdigit(integer()) -> char()
 %% @doc Convert an integer less than 16 to a hex digit.
--spec(hexdigit/1 :: (integer()) -> char()).
-
+-spec hexdigit(integer()) -> char().
 hexdigit(C) when C >= 0, C =< 9 ->
     C + $0;
 hexdigit(C) when C =< 15 ->
@@ -94,8 +86,7 @@ hexdigit(C) when C =< 15 ->
 
 %% @spec test() -> ok
 %% @doc Test this module.
--spec(test/0 :: () -> 'ok').
-
+-spec test() -> 'ok'.
 test() ->
     "ff000ff1" = to_hex([255, 0, 15, 241]),
     <<255, 0, 15, 241>> = to_bin("ff000ff1"),
