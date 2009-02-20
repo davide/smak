@@ -25,7 +25,7 @@
 -record(p, {
           status={200, "OK"} :: ewgi_status(),
           content_type :: string(),
-          headers :: ewgi_header_list()
+          headers=[] :: ewgi_header_list()
          }).
 
 -spec init(#ewgi_context{}, iolist()) -> #ewgi_context{}.
