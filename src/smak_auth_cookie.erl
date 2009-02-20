@@ -116,17 +116,23 @@ scan_cookie_content(#cka{include_ip=I}) ->
 -spec add_funs(#ewgi_context{}, #cka{}) -> #ewgi_context{}.
 add_funs(Ctx0, Cka) ->
     lists:foldl(fun({K, V}, C) -> ewgi_api:store_data(K, V, C) end,
-                Ctx0,
-                [{?SET_USER_ENV_NAME, set_user(Ctx0, Cka)},
-                 {?LOGOUT_USER_ENV_NAME, logout_user(Ctx0, Cka)}]).
+                Ctx0, [{?SET_USER_ENV_NAME, set_user(Ctx0, Cka)},
+                       {?LOGOUT_USER_ENV_NAME, logout_user(Ctx0, Cka)}]).
 
 -spec set_user(#ewgi_context{}, #cka{}) -> function().
-set_user(Ctx, #cka{include_ip=IncludeIp, cookie_name=CookieName, encoder=Encoder, key=Key, maxlength=M, secure=Sec}) ->
+set_user(Ctx, #cka{include_ip=IncludeIp,
+                   cookie_name=CookieName,
+                   encoder=Encoder,
+                   key=Key,
+                   maxlength=M,
+                   secure=Sec}) ->
     F = fun(UserId, UserData) ->
                 RemoteAddr = if IncludeIp -> ewgi_api:remote_addr(Ctx);
                                 true -> ?DEFAULT_IP
                              end,
-                CookieData = [{"REMOTE_USER", UserId}, {"REMOTE_USER_DATA", UserData}, {"REMOTE_ADDR", RemoteAddr}],
+                CookieData = [{"REMOTE_USER", UserId},
+                              {"REMOTE_USER_DATA", UserData},
+                              {"REMOTE_ADDR", RemoteAddr}],
                 CookieVal = case Encoder:encode(Key, term_to_binary(CookieData), M) of
                                 {error, _Reason} ->
                                     [];
@@ -184,6 +190,7 @@ cookie_safe_encode(Bin) when is_binary(Bin) ->
     Enc = binary_to_list(base64:encode(Bin)),
     list_to_binary(cookie_safe_encode1(Enc, [])).
 
+-spec cookie_safe_encode1(string(), string()) -> string().
 cookie_safe_encode1([], Acc) ->
     lists:reverse(Acc);
 cookie_safe_encode1([$=|Rest], Acc) ->
@@ -193,12 +200,14 @@ cookie_safe_encode1([$/|Rest], Acc) ->
 cookie_safe_encode1([C|Rest], Acc) ->
     cookie_safe_encode1(Rest, [C|Acc]).
 
+-spec cookie_safe_decode(binary() | list()) -> binary().
 cookie_safe_decode(Bin) when is_binary(Bin) ->
     cookie_safe_decode(binary_to_list(Bin));
 cookie_safe_decode(L) when is_list(L) ->
     Dec = cookie_safe_decode1(L, []),
     base64:decode(Dec).
 
+-spec cookie_safe_decode1(string(), list()) -> list().
 cookie_safe_decode1([], Acc) ->
     lists:reverse(Acc);
 cookie_safe_decode1([$~|Rest], Acc) ->
@@ -208,9 +217,11 @@ cookie_safe_decode1([$_|Rest], Acc) ->
 cookie_safe_decode1([C|Rest], Acc) ->
     cookie_safe_decode1(Rest, [C|Acc]).
 
+-spec populate_record(proplist(), #cka{}) -> #cka{}.
 populate_record(Options, Cka) ->
     lists:foldr(fun r_option/2, Cka, Options).
 
+-spec r_option({atom(), any()}, #cka{}) -> #cka{} | {'error', {'invalid_option', any()}}.
 r_option({cookie_name, N}, Cka) when is_list(N), is_record(Cka, cka) ->
     Cka#cka{cookie_name=N};
 r_option({encoder, E}, Cka) when is_record(Cka, cka) ->
