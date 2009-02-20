@@ -217,7 +217,7 @@ cookie_safe_decode1([$_|Rest], Acc) ->
 cookie_safe_decode1([C|Rest], Acc) ->
     cookie_safe_decode1(Rest, [C|Acc]).
 
--spec populate_record(proplist(), #cka{}) -> #cka{}.
+-spec populate_record(proplist(), #cka{}) -> #cka{} | {'error', {'invalid_option', any()}}.
 populate_record(Options, Cka) ->
     lists:foldr(fun r_option/2, Cka, Options).
 
