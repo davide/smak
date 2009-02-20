@@ -77,19 +77,18 @@
 
 %% @spec http_error(ewgi_app()) -> ewgi_app()
 %% @doc This middleware automatically catches exceptions of the form
--spec(http_error/1 :: (ewgi_app()) -> ewgi_app()).
-
+-spec http_error(ewgi_app()) -> ewgi_app().
 http_error(Application) ->
-    fun(Env, StartResp) ->
+    fun(Ctx) ->
             try
-                smak_ewgi:call_application(Application, Env, StartResp)
+                ewgi_application:run(Application, Ctx)
             catch
                 {http_error, Code} ->
-                    (lookup_error(Code, {[], [], []}))(Env, StartResp);
+                    (lookup_error(Code, {[], [], []}))(Ctx);
                   {http_error, Code, Extra} ->
-                    (lookup_error(Code, Extra))(Env, StartResp);
+                    (lookup_error(Code, Extra))(Ctx);
                   _ ->
-                    (internal_server_error([], [], []))(Env, StartResp)
+                    (internal_server_error([], [], []))(Ctx)
             end
     end.
 
@@ -155,16 +154,15 @@ lookup_error(505, {Detail, Headers, Comment}) ->
 %% @doc Returns a WSGI application that displays a 2xx-class HTTP success
 %% message.
 http_success(#status{code=Code, title=Title}=E) ->
-    fun(Env, StartResp) ->
-            {Headers, Content} = prepare_content(Env, E),
-            StartResp({Code, Title}, Headers),
-            [Content]
+    fun(Ctx) ->
+            {Headers, Content} = prepare_content(Ctx, E),
+            smak_http_response:init(Ctx, Content, [{status, {Code, Title}},
+                                                   {headers, Headers}])
     end.
 
 %% @spec ok(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 200 OK message.
--spec(ok/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec ok(string(), proplist(), string()) -> ewgi_app().
 ok(Detail, Headers, Comment) ->
     http_success(#status{code=200,
                          title="OK",
@@ -174,8 +172,7 @@ ok(Detail, Headers, Comment) ->
 
 %% @spec created(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 201 Created message.
--spec(created/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec created(string(), proplist(), string()) -> ewgi_app().
 created(Detail, Headers, Comment) ->
     http_success(#status{code=201,
                          title="Created",
@@ -185,8 +182,7 @@ created(Detail, Headers, Comment) ->
 
 %% @spec accepted(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 202 Accepted message.
--spec(accepted/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec accepted(string(), proplist(), string()) -> ewgi_app().
 accepted(Detail, Headers, Comment) ->
     http_success(#status{code=202,
                          title="Accepted",
@@ -197,8 +193,7 @@ accepted(Detail, Headers, Comment) ->
 
 %% @spec non_auth_info(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 203 Non-Authoritative Information message.
--spec(non_auth_info/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec non_auth_info(string(), proplist(), string()) -> ewgi_app().
 non_auth_info(Detail, Headers, Comment) ->
     http_success(#status{code=203,
                          title="Non-Authoritative Information",
@@ -208,8 +203,7 @@ non_auth_info(Detail, Headers, Comment) ->
 
 %% @spec no_content(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 204 No Content message.
--spec(no_content/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec no_content(string(), proplist(), string()) -> ewgi_app().
 no_content(Detail, Headers, Comment) ->
     http_success(#status{code=204,
                          title="No Content",
@@ -220,8 +214,7 @@ no_content(Detail, Headers, Comment) ->
 
 %% @spec reset_content(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 205 Reset Content message.
--spec(reset_content/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec reset_content(string(), proplist(), string()) -> ewgi_app().
 reset_content(Detail, Headers, Comment) ->
     http_success(#status{code=205,
                          title="Reset Content",
@@ -232,8 +225,7 @@ reset_content(Detail, Headers, Comment) ->
 
 %% @spec partial_content(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 206 Partial Content message.
--spec(partial_content/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec partial_content(string(), proplist(), string()) -> ewgi_app().
 partial_content(Detail, Headers, Comment) ->
     http_success(#status{code=206,
                          title="Partial Content",
@@ -256,17 +248,16 @@ partial_content(Detail, Headers, Comment) ->
 %% TODO: This is currently broken... Need to handle location properly.
 http_redir(Status, true) ->
     http_redir(Status, []);
-http_redir(#status{code=Code, title=Title}=E, Location) ->
-    fun(Env, StartResp) ->
-            {Headers, Content} = prepare_content(Env, E),
-            StartResp({Code, Title}, Headers),
-            [Content]
+http_redir(#status{code=Code, title=Title}=E, _Location) ->
+    fun(Ctx) ->
+            {Headers, Content} = prepare_content(Ctx, E),
+            smak_http_response:init(Ctx, Content, [{status, {Code, Title}},
+                                                   {headers, Headers}])
     end.
 
 %% @spec multiple_choices(string(), proplist(), string(), string() | bool()) -> ewgi_app()
 %% @doc Returns a 300 Multiple Choices redirection.
--spec(multiple_choices/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec multiple_choices(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 multiple_choices(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=300,
                        title="Multiple Choices",
@@ -278,8 +269,7 @@ multiple_choices(Detail, Headers, Comment, Location) ->
 
 %% @spec moved_perm(string(), proplist(), string(), string() | bool()) -> ewgi_app()
 %% @doc Returns a 301 Moved Permanently redirection.
--spec(moved_perm/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec moved_perm(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 moved_perm(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=301,
                        title="Moved Permanently",
@@ -291,8 +281,7 @@ moved_perm(Detail, Headers, Comment, Location) ->
 
 %% @spec found(string(), proplist(), string(), string() | bool()) -> ewgi_app()
 %% @doc Returns a 302 Found redirection.
--spec(found/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec found(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 found(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=302,
                        title="Found",
@@ -306,8 +295,7 @@ found(Detail, Headers, Comment, Location) ->
 %% @doc Returns a 303 See Other redirection. This redirect can safely be used
 %% after a POST request (the new location shoult be retrieved with GET by the
 %% user agent).
--spec(see_other/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec see_other(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 see_other(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=303,
                        title="See Other",
@@ -320,8 +308,7 @@ see_other(Detail, Headers, Comment, Location) ->
 %% @spec not_modified(string(), proplist(), string(), string() | bool()) -> ewgi_app()
 %% @doc Returns a 304 Not Modified redirection. Note: This should include a
 %% Date or ETag header...
--spec(not_modified/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec not_modified(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 not_modified(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=304,
                        title="Not Modified",
@@ -334,8 +321,7 @@ not_modified(Detail, Headers, Comment, Location) ->
 
 %% @spec use_proxy(string(), proplist(), string(), string() | bool()) -> ewgi_app()
 %% @doc Returns a 305 Use Proxy redirection.
--spec(use_proxy/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec use_proxy(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 use_proxy(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=305,
                        title="Use Proxy",
@@ -347,8 +333,7 @@ use_proxy(Detail, Headers, Comment, Location) ->
 
 %% @spec temporary_redir(string(), proplist(), string(), string() | bool()) -> ewgi_app()
 %% @doc Returns a 307 Temporary Redirect redirection.
--spec(temporary_redir/4 :: (string(), proplist(), string(), string() | bool()) -> ewgi_app()).
-
+-spec temporary_redir(string(), proplist(), string(), string() | bool()) -> ewgi_app().
 temporary_redir(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=307,
                        title="Temporary Redirect",
@@ -382,28 +367,26 @@ temporary_redir(Detail, Headers, Comment, Location) ->
 %% @doc Returns a WSGI application that displays a 4xx-class HTTP client
 %% error.
 http_client_error(#status{code=Code, title=Title}=E) ->
-    fun(Env, StartResp) ->
-            {Headers, Content} = prepare_content(Env, E),
-            StartResp({Code, Title}, Headers),
-            [Content]
+    fun(Ctx) ->
+            {Headers, Content} = prepare_content(Ctx, E),
+            smak_http_response:init(Ctx, Content, [{status, {Code, Title}},
+                                                   {headers, Headers}])
     end.
 
 %% @spec bad_request(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 400 Bad Request error.
--spec(bad_request/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec bad_request(string(), proplist(), string()) -> ewgi_app().
 bad_request(Detail, Headers, Comment) ->
     http_client_error(#status{code=400,
-                                    title="Bad Request",
-                                    explanation="The request could not be understood by the server due to malformed syntax.",
-                                    detail=Detail,
-                                    headers=Headers,
-                                    comment=Comment}).
+                              title="Bad Request",
+                              explanation="The request could not be understood by the server due to malformed syntax.",
+                              detail=Detail,
+                              headers=Headers,
+                              comment=Comment}).
 
 %% @spec unauthorized(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 401 Unauthorized error.
--spec(unauthorized/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec unauthorized(string(), proplist(), string()) -> ewgi_app().
 unauthorized(Detail, Headers, Comment) ->
     http_client_error(#status{code=401,
                                     title="Unauthorized",
@@ -414,8 +397,7 @@ unauthorized(Detail, Headers, Comment) ->
 
 %% @spec payment_required(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 402 Payment Required error. The RFC 2616 says this code is "reserved for future use."
--spec(payment_required/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec payment_required(string(), proplist(), string()) -> ewgi_app().
 payment_required(Detail, Headers, Comment) ->
     http_client_error(#status{code=402,
                                     title="Payment Required",
@@ -426,8 +408,7 @@ payment_required(Detail, Headers, Comment) ->
 
 %% @spec forbidden(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 403 Forbidden error.
--spec(forbidden/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec forbidden(string(), proplist(), string()) -> ewgi_app().
 forbidden(Detail, Headers, Comment) ->
     http_client_error(#status{code=403,
                                     title="Forbidden",
@@ -438,8 +419,7 @@ forbidden(Detail, Headers, Comment) ->
 
 %% @spec not_found(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 404 Not Found error.
--spec(not_found/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec not_found(string(), proplist(), string()) -> ewgi_app().
 not_found(Detail, Headers, Comment) ->
     http_client_error(#status{code=404,
                                     title="Not Found",
@@ -450,11 +430,10 @@ not_found(Detail, Headers, Comment) ->
 
 %% @spec method_not_allowed(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 405 Method Not Allowed error.
--spec(method_not_allowed/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec method_not_allowed(string(), proplist(), string()) -> ewgi_app().
 method_not_allowed(Detail, Headers, Comment) ->
     Tmpl = fun(_, D, _, E) ->
-                   Method = smak_ewgi:request_method(E),
+                   Method = ewgi_api:request_method(E),
                    io_lib:format("The method ~p is not allowed for this resource.\r\n~s", [Method, D])
            end,
     http_client_error(#status{code=405,
@@ -467,11 +446,10 @@ method_not_allowed(Detail, Headers, Comment) ->
 
 %% @spec not_acceptable(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 406 Not Acceptable error.
--spec(not_acceptable/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec not_acceptable(string(), proplist(), string()) -> ewgi_app().
 not_acceptable(Detail, Headers, Comment) ->
     Tmpl = fun(_, D, _, E) ->
-                   HttpAccept = smak_ewgi:http_accept(E),
+                   HttpAccept = ewgi_api:get_header_value("accept", E),
                    io_lib:format("The resource identified by the request could not generate a "
                                  "response entity with acceptable content characteristics "
                                  "(of type ~s).\r\n~s", [HttpAccept, D])
@@ -486,8 +464,7 @@ not_acceptable(Detail, Headers, Comment) ->
 
 %% @spec proxy_authentication_required(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 407 Proxy Authentication Required error.
--spec(proxy_authentication_required/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec proxy_authentication_required(string(), proplist(), string()) -> ewgi_app().
 proxy_authentication_required(Detail, Headers, Comment) ->
     http_client_error(#status{code=407,
                                     title="Proxy Authentication Required",
@@ -498,8 +475,7 @@ proxy_authentication_required(Detail, Headers, Comment) ->
 
 %% @spec request_timeout(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 408 Request Timeout error.
--spec(request_timeout/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec request_timeout(string(), proplist(), string()) -> ewgi_app().
 request_timeout(Detail, Headers, Comment) ->
     http_client_error(#status{code=408,
                                     title="Request Timeout",
@@ -510,8 +486,7 @@ request_timeout(Detail, Headers, Comment) ->
 
 %% @spec conflict(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 409 Conflict error.
--spec(conflict/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec conflict(string(), proplist(), string()) -> ewgi_app().
 conflict(Detail, Headers, Comment) ->
     http_client_error(#status{code=409,
                                     title="Conflict",
@@ -522,8 +497,7 @@ conflict(Detail, Headers, Comment) ->
 
 %% @spec gone(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 410 Gone error.
--spec(gone/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec gone(string(), proplist(), string()) -> ewgi_app().
 gone(Detail, Headers, Comment) ->
     http_client_error(#status{code=410,
                                     title="Gone",
@@ -534,8 +508,7 @@ gone(Detail, Headers, Comment) ->
 
 %% @spec length_required(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 411 Length Required error.
--spec(length_required/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec length_required(string(), proplist(), string()) -> ewgi_app().
 length_required(Detail, Headers, Comment) ->
     http_client_error(#status{code=411,
                                     title="Length Required",
@@ -546,8 +519,7 @@ length_required(Detail, Headers, Comment) ->
 
 %% @spec precondition_failed(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 412 Precondition Failed error.
--spec(precondition_failed/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec precondition_failed(string(), proplist(), string()) -> ewgi_app().
 precondition_failed(Detail, Headers, Comment) ->
     http_client_error(#status{code=412,
                                     title="Precondition Failed",
@@ -558,8 +530,7 @@ precondition_failed(Detail, Headers, Comment) ->
 
 %% @spec request_entity_too_large(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 413 Request Entity Too Large error.
--spec(request_entity_too_large/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec request_entity_too_large(string(), proplist(), string()) -> ewgi_app().
 request_entity_too_large(Detail, Headers, Comment) ->
     http_client_error(#status{code=413,
                                     title="Request Entity Too Large",
@@ -570,8 +541,7 @@ request_entity_too_large(Detail, Headers, Comment) ->
 
 %% @spec request_uri_too_long(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 414 Request-URI Too Long error.
--spec(request_uri_too_long/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec request_uri_too_long(string(), proplist(), string()) -> ewgi_app().
 request_uri_too_long(Detail, Headers, Comment) ->
     http_client_error(#status{code=414,
                                     title="Request-URI Too Long",
@@ -582,11 +552,10 @@ request_uri_too_long(Detail, Headers, Comment) ->
 
 %% @spec unsupported_media_type(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 415 Unsupported Media Type error.
--spec(unsupported_media_type/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec unsupported_media_type(string(), proplist(), string()) -> ewgi_app().
 unsupported_media_type(Detail, Headers, Comment) ->
     Tmpl = fun(_, D, _, E) ->
-                   ContentType = smak_ewgi:content_type(E),
+                   ContentType = ewgi_api:content_type(E),
                    io_lib:format("The requested media type ~s is not supported.\r\n~s", [ContentType, D])
            end,
     http_client_error(#status{code=415,
@@ -600,8 +569,7 @@ unsupported_media_type(Detail, Headers, Comment) ->
 
 %% @spec request_range_not_satisfiable(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 416 Request Range Not Satisfiable error.
--spec(request_range_not_satisfiable/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec request_range_not_satisfiable(string(), proplist(), string()) -> ewgi_app().
 request_range_not_satisfiable(Detail, Headers, Comment) ->
     http_client_error(#status{code=416,
                                     title="Request Range Not Satisfiable",
@@ -612,8 +580,7 @@ request_range_not_satisfiable(Detail, Headers, Comment) ->
 
 %% @spec expectation_failed(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 417 Expectation Failed error.
--spec(expectation_failed/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec expectation_failed(string(), proplist(), string()) -> ewgi_app().
 expectation_failed(Detail, Headers, Comment) ->
     http_client_error(#status{code=417,
                                     title="Expectation Failed",
@@ -634,16 +601,15 @@ expectation_failed(Detail, Headers, Comment) ->
 %% @doc Returns a WSGI application that displays a 5xx-class HTTP server
 %% error.
 http_server_error(#status{code=Code, title=Title}=E) ->
-    fun(Env, StartResp) ->
-            {Headers, Content} = prepare_content(Env, E),
-            StartResp({Code, Title}, Headers),
-            [Content]
+    fun(Ctx) ->
+            {Headers, Content} = prepare_content(Ctx, E),
+            smak_http_response:init(Ctx, Content, [{status, {Code, Title}},
+                                                   {headers, Headers}])
     end.
 
 %% @spec internal_server_error(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 500 Internal Server error.
--spec(internal_server_error/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec internal_server_error(string(), proplist(), string()) -> ewgi_app().
 internal_server_error(Detail, Headers, Comment) ->
     http_server_error(#status{code=500,
                                     title="Internal Server Error",
@@ -654,11 +620,10 @@ internal_server_error(Detail, Headers, Comment) ->
 
 %% @spec not_implemented(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 501 Not Implemented error.
--spec(not_implemented/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec not_implemented(string(), proplist(), string()) -> ewgi_app().
 not_implemented(Detail, Headers, Comment) ->
     Tmpl = fun(_, D, _, E) ->
-                   Method = smak_ewgi:request_method(E),
+                   Method = ewgi_api:request_method(E),
                    io_lib:format("The request method ~p is not implemented by the server for this resource.\r\n~s", [Method, D])
            end,
     http_server_error(#status{code=501,
@@ -671,8 +636,7 @@ not_implemented(Detail, Headers, Comment) ->
 
 %% @spec bad_gateway(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 502 Bad Gateway error.
--spec(bad_gateway/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec bad_gateway(string(), proplist(), string()) -> ewgi_app().
 bad_gateway(Detail, Headers, Comment) ->
     http_server_error(#status{code=502,
                                     title="Bad Gateway",
@@ -683,8 +647,7 @@ bad_gateway(Detail, Headers, Comment) ->
 
 %% @spec service_unavailable(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 503 Service Unavailable error.
--spec(service_unavailable/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec service_unavailable(string(), proplist(), string()) -> ewgi_app().
 service_unavailable(Detail, Headers, Comment) ->
     http_server_error(#status{code=503,
                                     title="Service Unavailable",
@@ -695,8 +658,7 @@ service_unavailable(Detail, Headers, Comment) ->
 
 %% @spec gateway_timeout(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 504 Gateway Timeout error.
--spec(gateway_timeout/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec gateway_timeout(string(), proplist(), string()) -> ewgi_app().
 gateway_timeout(Detail, Headers, Comment) ->
     http_server_error(#status{code=504,
                                     title="Gateway Timeout",
@@ -707,8 +669,7 @@ gateway_timeout(Detail, Headers, Comment) ->
 
 %% @spec version_not_supported(string(), proplist(), string()) -> ewgi_app()
 %% @doc Returns a 505 Version Not Supported error.
--spec(version_not_supported/3 :: (string(), proplist(), string()) -> ewgi_app()).
-
+-spec version_not_supported(string(), proplist(), string()) -> ewgi_app().
 version_not_supported(Detail, Headers, Comment) ->
     http_server_error(#status{code=505,
                                     title="Version Not Supported",
@@ -717,37 +678,36 @@ version_not_supported(Detail, Headers, Comment) ->
                                     headers=Headers,
                                     comment=Comment}).
 
-prepare_content(Env, Err) ->
-    Accept = smak_ewgi:http_accept(Env),
-    case Accept of
+prepare_content(Ctx, Err) ->
+    case ewgi_api:get_header_value("accept", Ctx) of
         undefined ->
-            prepare_content2(Accept, 0, Env, Err);
+            prepare_content2(undefined, 0, Ctx, Err);
         Accept ->
-            prepare_content1(Accept, string:str(Accept, "html"), Env, Err)
+            prepare_content1(Accept, string:str(Accept, "html"), Ctx, Err)
     end.
 
-prepare_content1(Accept, 0, Env, Err) ->
-    prepare_content2(Accept, string:str(Accept, "*/*"), Env, Err);
-prepare_content1(_, _, Env, #status{headers=Headers}=Err) ->
+prepare_content1(Accept, 0, Ctx, Err) ->
+    prepare_content2(Accept, string:str(Accept, "*/*"), Ctx, Err);
+prepare_content1(_, _, Ctx, #status{headers=Headers}=Err) ->
     {_, H1} = smak_response:replace_header(Headers, "content-type", "text/html; charset=utf8"),
-    C = html_output(Env, Err),
+    C = html_output(Ctx, Err),
     {H1, C}.
 
-prepare_content2(_, 0, Env, #status{headers=Headers}=Err) ->
+prepare_content2(_, 0, Ctx, #status{headers=Headers}=Err) ->
     {_, H1} = smak_response:replace_header(Headers, "content-type", "text/plain; charset=utf8"),
-    C = plain_output(Env, Err),
+    C = plain_output(Ctx, Err),
     {H1, C};
-prepare_content2(Accept, N, Env, Err) ->
-    prepare_content1(Accept, N, Env, Err).
+prepare_content2(Accept, N, Ctx, Err) ->
+    prepare_content1(Accept, N, Ctx, Err).
     
 %% @doc Deliver plain text output of the error without escaping.
-plain_output(Env, #status{code=Code, title=Title, template=#body_template{plain=T}}=Err) ->
-    Body = make_body(Env, Err, T),
+plain_output(Ctx, #status{code=Code, title=Title, template=#body_template{plain=T}}=Err) ->
+    Body = make_body(Ctx, Err, T),
     io_lib:format("~p ~s\r\n~s\r\n", [Code, Title, Body]).
 
 %% @doc Deliver HTML output of the error with necessary entities escaped.
-html_output(Env, #status{title=Title, template=#body_template{html=T}}=Err) ->
-    Body = make_body(Env,
+html_output(Ctx, #status{title=Title, template=#body_template{html=T}}=Err) ->
+    Body = make_body(Ctx,
                      Err#status{detail=smak_html_util:escape(Err#status.detail),
                                       explanation=smak_html_util:escape(Err#status.explanation),
                                       comment=smak_html_util:escape(Err#status.comment)},
@@ -757,9 +717,9 @@ html_output(Env, #status{title=Title, template=#body_template{html=T}}=Err) ->
                   "</body>\r</html>\r", [Title, Title, Body]).
 
 %% @doc Create the error body for a particular error and template.
-make_body(Env, #status{detail=Detail, explanation=Explanation, comment=Comment}, Tmpl) ->
-    EscapedEnv = [{K, body_repr(V)} || {K, V} <- Env],
-    Tmpl(Detail, Explanation, Comment, EscapedEnv).
+make_body(Ctx, #status{detail=Detail, explanation=Explanation, comment=Comment}, Tmpl) ->
+    EscapedCtx = [{K, body_repr(V)} || {K, V} <- ewgi_api:get_all_headers(Ctx)],
+    Tmpl(Detail, Explanation, Comment, EscapedCtx).
 
 body_repr(Str) when is_list(Str) ->
     smak_html_util:escape(Str);
