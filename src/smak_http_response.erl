@@ -42,27 +42,33 @@ init(Ctx, Content, Params0) ->
 
 -spec add_content_type(#p{}, #ewgi_context{}) -> #ewgi_context{}.
 add_content_type(#p{content_type=undefined}, Ctx) ->
-    case ewgi_api:get_header_value("content-type", Ctx) of
+    Hdr0 = ewgi_api:response_headers(Ctx),
+    case proplists:get_value("content-type", Hdr0) of
         undefined ->
-            ewgi_api:insert_header("content-type", ?DEFAULT_CONTENT_TYPE, Ctx);
+            Hdr = [{"content-type", ?DEFAULT_CONTENT_TYPE}|Hdr0],
+            ewgi_api:response_headers(Hdr, Ctx);
         _ ->
             Ctx
     end;
 add_content_type(#p{content_type=V}, Ctx) ->
-    ewgi_api:set_header("content-type", V, Ctx).
+    Hdr0 = ewgi_api:response_headers(Ctx),
+    Hdr = [{"content-type", V}|proplists:delete("content-type", Hdr0)],
+    ewgi_api:response_headers(Hdr, Ctx).
 
 -spec merge_headers(ewgi_header_list(), #ewgi_context{}) -> #ewgi_context{}.
-merge_headers(L, Ctx0) ->
-    lists:foldl(fun({H, V}, Ctx) ->
-                        case ewgi_api:get_header_value(H, Ctx) of
-                            undefined ->
-                                ewgi_api:insert_header(H, V, Ctx);
-                            V ->
-                                Ctx;
-                            V1 ->
-                                ewgi_api:set_header(H, V1, Ctx)
-                        end
-                end, Ctx0, L).
+merge_headers(L, Ctx) ->
+    Hdr0 = ewgi_api:response_headers(Ctx),
+    Hdr = lists:foldl(fun({H, V}=A, Headers) ->
+                              case proplists:get_value(H, Headers) of
+                                  undefined ->
+                                      [A|Headers];
+                                  V ->
+                                      Headers;
+                                  _ ->
+                                      [A|proplists:delete(H, Headers)]
+                              end
+                      end, Hdr0, L),
+    ewgi_api:response_headers(Hdr, Ctx).
 
 -spec parse(init_params()) -> #p{}.
 parse(L) ->
