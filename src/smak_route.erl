@@ -14,7 +14,7 @@
 
 -export([routes/1]).
 -export([resolve/2, reverse/2]).
--export([route/2, route/3]).
+-export([route/2, route/3, route/4]).
 -export([test/0]).
 
 -type regex() :: string().
@@ -28,6 +28,7 @@
 
 -record(route, {
           pattern :: pattern(),
+          doc :: binary(),
           subs=[] :: [grpidx()],
           name :: rname()
          }).
@@ -54,11 +55,15 @@ routes(L) ->
 
 -spec route(rname(), pattern()) -> #croute{}.
 route(Name, Pat) ->
-    route(Name, Pat, []).
+    route(Name, <<"">>, Pat).
 
--spec route(rname(), pattern(), [grpidx()]) -> #croute{}.
-route(Name, Pat, G) ->
-    Route = #route{pattern=Pat, name=Name, subs=G},
+-spec route(rname(), binary(), pattern()) -> #croute{}.
+route(Name, Doc, Pat) ->
+    route(Name, Doc, Pat, []).
+
+-spec route(rname(), binary(), pattern(), [grpidx()]) -> #croute{}.
+route(Name, Doc, Pat, G) ->
+    Route = #route{pattern=Pat, name=Name, subs=G, doc=Doc},
     C0 = lists:foldl(fun compile_re/2, #croute{route=Route}, Pat),
     Exp = lists:reverse(lists:flatten(C0#croute.regex)),
     {ok, Exp1} = re:compile(Exp),
