@@ -113,7 +113,7 @@ rename(L) when is_list(L) ->
 resolve(T, Url) ->
     resolve(gb_trees:to_list(T), Url, nomatch).
 
--spec resolve([#croute{}], string(), mresult()) -> mresult().
+-spec resolve([{rname(), #croute{}}], string(), mresult()) -> mresult().
 resolve([{N, H}|T], Url, nomatch) ->
     case resolve1(H, Url) of
         nomatch ->
