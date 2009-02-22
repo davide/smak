@@ -12,7 +12,7 @@
 -module(smak_route).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([routes/1]).
+-export([routes_all/0, routes/1]).
 -export([resolve/2, reverse/2]).
 -export([route/2, route/3, route/4]).
 -export([test/0]).
@@ -52,6 +52,25 @@ routes(L) ->
     lists:foldl(fun(#croute{route=#route{name=K}}=V, T) ->
                         gb_trees:insert(K, V, T)
                 end, gb_trees:empty(), L).
+
+-spec routes_all() -> tuple().
+routes_all() ->
+    routes(lists:flatten([look_mod(M) || {M, _} <- code:all_loaded()])).
+
+-spec look_mod(atom()) -> [#croute{}].
+look_mod(M) ->
+    Exports = proplists:get_value(exports, M:module_info()),
+    case proplists:get_value(smak_routes, Exports) of
+        0 ->
+            try
+                M:smak_routes()
+            catch
+                _:_ ->
+                    []
+            end;
+        _ ->
+            []
+    end.
 
 -spec route(rname(), pattern()) -> #croute{}.
 route(Name, Pat) ->
