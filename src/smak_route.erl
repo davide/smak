@@ -17,6 +17,8 @@
 -export([route/2, route/3, route/4]).
 -export([test/0]).
 
+-include("smak.hrl").
+
 -type regex() :: string().
 -type grpidx() :: atom() | integer().
 -type mgroup() :: {grpidx(), regex()} | {grpidx(), regex(), any()}.
@@ -35,7 +37,7 @@
 
 -record(croute, {
           route :: #route{},
-          defaults=gb_trees:empty() :: tuple(), % gb_tree()
+          defaults=gb_trees:empty() :: gb_tree(),
           regex=[] :: any() %% compiled regex
          }).
 
@@ -47,13 +49,13 @@
 %% becomes:
 %%     "^users/(?P<name>\w+)/images$"
 
--spec routes([#croute{}]) -> tuple().
+-spec routes([#croute{}]) -> gb_tree().
 routes(L) ->
     lists:foldl(fun(#croute{route=#route{name=K}}=V, T) ->
                         gb_trees:insert(K, V, T)
                 end, gb_trees:empty(), L).
 
--spec routes_all() -> tuple().
+-spec routes_all() -> gb_tree().
 routes_all() ->
     routes(lists:flatten([look_mod(M) || {M, _} <- code:all_loaded()])).
 
@@ -109,7 +111,7 @@ rename(L) when is_list(L) ->
     L.
 
 -type mresult() :: 'nomatch' | {rname(), pmatches()}.
--spec resolve(tuple(), string()) -> mresult().
+-spec resolve(gb_tree(), string()) -> mresult().
 resolve(T, Url) ->
     resolve(gb_trees:to_list(T), Url, nomatch).
 
@@ -135,7 +137,7 @@ resolve1(#croute{route=#route{subs=S}, regex=R, defaults=D}, Url) ->
             []
     end.
 
--spec resolve_default(pmatch(), tuple()) -> pmatch().
+-spec resolve_default(pmatch(), gb_tree()) -> pmatch().
 resolve_default({Name, []}=Orig, D) ->
     case gb_trees:lookup(Name, D) of
         {value, V} ->
@@ -147,7 +149,7 @@ resolve_default(Orig, _) ->
     Orig.
 
 %% Naive reverse matching.  Ignores type of incoming data against pattern.
--spec reverse(tuple(), {rname(), pmatches()}) -> string() | 'nomatch'.
+-spec reverse(gb_tree(), {rname(), pmatches()}) -> string() | 'nomatch'.
 reverse(T, {N, L}) ->
     case gb_trees:lookup(N, T) of
         none ->
