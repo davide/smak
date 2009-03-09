@@ -176,11 +176,12 @@ reverse1([{Name, _}|T], L, Acc) ->
             reverse1(T, L, [V|Acc])
     end.
 
--spec test() -> string().
+-spec test() -> 'ok'.
 test() ->
     R0 = route("foo", <<"">>, ["/", {1, "url"}, "/", {bar, "\\w+", "bar"}, "/", {baz, "\\d+", "0"}, "/"], [1, bar, baz]),
     R1 = route("baz", <<"">>, ["/", {1, "static"}, "/"], []),
     Routes = routes([R0, R1]),
     Url = "/url/test/100/",
     M = resolve(Routes, Url),
-    Url = reverse(Routes, M).
+    Url = reverse(Routes, M),
+    ok.
