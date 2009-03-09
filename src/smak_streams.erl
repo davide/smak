@@ -40,14 +40,14 @@
 
 %% @spec empty() -> function()
 %% @doc Returns an empty stream
--spec(empty/0 :: () -> fun(() -> {})).
+-spec empty() -> fun(() -> {}).
 
 empty() ->
     ?DELAY({}).
 
 %% @spec push(any(), stream()) -> stream()
 %% @doc Pushes H onto the head of T
--spec(push/2 :: (any(), stream()) -> stream()).
+-spec push(any(), stream()) -> stream().
 
 push(H, T) when is_function(T, 0) ->
     ?DELAY({H, T}).
@@ -56,7 +56,7 @@ push(H, T) when is_function(T, 0) ->
 %% @doc Converts a stream into a list. Note that it will never return if an
 %% infinite stream is passed to this function. It also has the effect of
 %% forcing every lazy element of the stream.
--spec(to_list/1 :: (stream()) -> list()).
+-spec to_list(stream()) -> [any()].
      
 to_list(S) when is_function(S, 0) ->
     case ?FORCE(S) of
@@ -68,7 +68,7 @@ to_list(S) when is_function(S, 0) ->
 
 %% @spec list_to_stream(list()) -> stream()
 %% @doc Turns a proper normal list into a stream.
--spec(list_to_stream/1 :: (list()) -> stream()).
+-spec list_to_stream([any()]) -> stream().
 
 list_to_stream(L) when is_list(L) ->
     ?DELAY(case L of
@@ -80,7 +80,7 @@ list_to_stream(L) when is_list(L) ->
 
 %% @spec append(stream(), stream()) -> stream()
 %% @doc Append the stream S2 to S1, returning a new stream.
--spec(append/2 :: (stream(), stream()) -> stream()).
+-spec append(stream(), stream()) -> stream().
 
 append(S1, S2) when is_function(S1, 0), is_function(S2, 0) ->
     ?DELAY(case ?FORCE(S1) of
@@ -92,14 +92,14 @@ append(S1, S2) when is_function(S1, 0), is_function(S2, 0) ->
 
 %% @spec seq(integer()) -> stream()
 %% @doc Returns an *infinite* stream starting at From in ascending order.
--spec(seq/1 :: (integer()) -> stream()).
+-spec seq(integer()) -> stream().
 
 seq(From) when is_integer(From) ->
     ?DELAY({From, seq(From + 1)}).
 
 %% @spec seq(integer(), integer()) -> stream()
 %% @doc Returns a stream consisting of integers in the interval From..To in ascending order.
--spec(seq/2 :: (integer(), integer()) -> stream()).
+-spec seq(integer(), integer()) -> stream().
 
 seq(From, To) when is_integer(From), is_integer(To) ->
     seq(From, To, 1).
@@ -108,7 +108,7 @@ seq(From, To) when is_integer(From), is_integer(To) ->
 %% @doc The stream of integers [From, From + D, From + 2*D, ..., From +
 %% D*((To - From) mod D)]. The interval is empty if D does not have the same
 %% sign as the difference To - From.
--spec(seq/3 :: (integer(), integer(), integer()) -> stream()).
+-spec seq(integer(), integer(), integer()) -> stream().
 
 seq(From, To, D) when is_integer(From), is_integer(To), From < To, D > 0 ->
     ?DELAY({From, seq(From + D, To, D)});
@@ -122,21 +122,21 @@ seq(_From, _To, _D) ->
 %% @spec integers(integer()) -> stream()
 %% @doc The stream of integers starting at N.
 %% @see seq/1
--spec(integers/1 :: (integer()) -> stream()).
+-spec integers(integer()) -> stream().
 
 integers(N) when is_integer(N) ->
     seq(N).
 
 %% @spec constant(any()) -> stream()
 %% @doc The infinite stream of elements X. 
--spec(constant/1 :: (any()) -> stream()).
+-spec constant(any()) -> stream().
 
 constant(X) ->
     ?DELAY({X, constant(X)}).
 
 %% @spec duplicate(integer(), any()) -> stream()
 %% @doc The stream of length N, where each element is X.
--spec(duplicate/2 :: (integer(), any()) -> stream()).
+-spec duplicate(integer(), any()) -> stream().
 
 duplicate(N, X) when is_integer(N) ->
     ?DELAY(if N > 0 ->
@@ -145,10 +145,10 @@ duplicate(N, X) when is_integer(N) ->
                    {}
            end).
 
-%% @spec first(integer(), stream()) -> stream()
+%% @spec first(non_neg_integer(), stream()) -> stream()
 %% @doc The stream consisting of the first N elements of S, or the stream S
 %% if the length of S is not greater than N.
--spec(first/2 :: (integer(), stream()) -> stream()).
+-spec first(non_neg_integer(), stream()) -> stream().
 
 first(0, _S) ->
     empty();
@@ -163,7 +163,7 @@ first(N, S) when is_integer(N), N > 0, is_function(S, 0) ->
 %% @spec takewhile(function(), stream()) -> stream()
 %% @doc Accumulates elements from a stream while the unary predicate is
 %% true. It forces each of the elements of the stream it must test.
--spec(takewhile/2 :: (function(), stream()) -> stream()).
+-spec takewhile(fun((any()) -> bool()), stream()) -> stream().
 
 takewhile(P, S) when is_function(P, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -178,9 +178,9 @@ takewhile(P, S) when is_function(P, 1), is_function(S, 0) ->
                    {}
            end).
 
-%% @spec drop(integer(), stream()) -> stream()
+%% @spec drop(non_neg_integer(), stream()) -> stream()
 %% @doc The stream [EN+1, EN+2, ...], if S is [E1, ..., EN, EN+1, ...].
--spec(drop/2 :: (integer(), stream()) -> stream()).
+-spec drop(non_neg_integer(), stream()) -> stream().
 
 drop(0, S) when is_function(S, 0) ->
     S;
@@ -195,7 +195,7 @@ drop(N, S) when is_integer(N), N > 0, is_function(S, 0) ->
 %% @spec dropwhile(function(), stream()) -> stream()
 %% @doc Drops elements from a stream while the unary predicate is true. It
 %% forces each of the elements of the stream it must test.
--spec(dropwhile/2 :: (function(), stream()) -> stream()).
+-spec dropwhile(fun((any()) -> bool()), stream()) -> stream().
 
 dropwhile(P, S) when is_function(P, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -210,16 +210,16 @@ dropwhile(P, S) when is_function(P, 1), is_function(S, 0) ->
                    {}
            end).
 
-%% @spec subsequence(integer(), integer(), stream()) -> stream()
+%% @spec subsequence(non_neg_integer(), pos_integer(), stream()) -> stream()
 %% @doc The stream [EN, EN+1, ..., EN+D], if S is [E1, E2, ...].
--spec(subsequence/3 :: (integer(), integer(), stream()) -> stream()).
+-spec subsequence(non_neg_integer(), pos_integer(), stream()) -> stream().
 
 subsequence(N, D, S) when N > 0, D >= 0 ->
     first(D, drop(N, S)).
 
 %% @spec map(function(), stream()) -> stream()
 %% @doc The stream [F(E1), F(E2), F(E3), ...] if S is [E1, E2, E3, ...].
--spec(map/2 :: (function(), stream()) -> stream()).
+-spec map(fun(), stream()) -> stream().
 
 map(F, S) when is_function(F, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -233,7 +233,7 @@ map(F, S) when is_function(F, 1), is_function(S, 0) ->
 %% @doc The stream of all elements E in S (in the same order) for which P(E)
 %% returns `true'. P must return either `true' or `false' for all elements in
 %% S.
--spec(filter/2 :: (function(), stream()) -> stream()).
+-spec filter(fun((any()) -> bool()), stream()) -> stream().
 
 filter(P, S) when is_function(P, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -254,7 +254,7 @@ filter(P, S) when is_function(P, 1), is_function(S, 0) ->
 %% ordered before the first possible X of S1 such that P(X, Y) yields
 %% `false'. P(X, Y) must yield either `true' or `false' for all X in S1 and Y
 %% in S2. (P can be read as "less than".)
--spec(merge/3 :: (function(), function(), function()) -> stream()).
+-spec merge(fun((any(), any()) -> bool()), stream(), stream()) -> stream().
 
 merge(P, S1, S2) when is_function(P, 2), is_function(S1, 0), is_function(S2, 0) ->
     ?DELAY(case ?FORCE(S1) of
@@ -278,7 +278,7 @@ merge(P, S1, S2) when is_function(P, 2), is_function(S1, 0), is_function(S2, 0) 
 
 %% @spec member(any(), stream()) -> bool()
 %% @doc Returns `true' if X is in the stream S, and `false' otherwise.
--spec(member/2 :: (any(), stream()) -> bool()).
+-spec member(any(), stream()) -> bool().
 
 member(X, S) when is_function(S, 0) ->
     case ?FORCE(S) of
@@ -292,17 +292,17 @@ member(X, S) when is_function(S, 0) ->
 
 %% @spec nth(integer(), stream()) -> any()
 %% @doc Returns the Nth element of stream S.
--spec(nth/2 :: (integer(), stream()) -> any()).
+-spec nth(integer(), stream()) -> any().
 
 nth(N, S) when N > 1, is_function(S, 0) ->
     nth(N - 1, ?TAIL(?FORCE(S)));
 nth(_, S) when is_function(S, 0) ->
     ?HEAD(?FORCE(S)).
 
-%% @spec nthtail(integer(), stream()) -> stream()
+%% @spec nthtail(non_neg_integer(), stream()) -> stream()
 %% @doc Returns the stream [AN+1, AN+2, ...] if S is [A1, A2, ..., AN, AN+1,
 %% AN+2, ...].
--spec(nthtail/2 :: (integer(), stream()) -> stream()).
+-spec nthtail(non_neg_integer(), stream()) -> stream().
 
 nthtail(N, S) when N > 1, is_function(S, 0) ->
     nthtail(N - 1, ?TAIL(?FORCE(S)));
@@ -312,7 +312,7 @@ nthtail(0, S) when is_function(S, 0) ->
 %% @spec foldl(any(), function(), stream()) -> any()
 %% @doc Computes (...((A F E1) F E2)... F EN), if S is [E1, E2, ..., EN] and
 %% F is a binary function (here written as an infix operator).
--spec(foldl/3 :: (any(), function(), stream()) -> any()).
+-spec foldl(any(), fun(), stream()) -> any().
 
 foldl(A, F, S) when is_function(F, 2), is_function(S, 0) ->
     case ?FORCE(S) of
@@ -325,7 +325,7 @@ foldl(A, F, S) when is_function(F, 2), is_function(S, 0) ->
 %% @spec foldr(stream(), function(), any()) -> any()
 %% @doc Computes (E1 F ...(EN-1 F (EN F A))...), if S is [E1, E2, ..., EN]
 %% and F is a binary function (here written as an infix operator).
--spec(foldr/3 :: (stream(), function(), any()) -> any()).
+-spec foldr(stream(), fun(), any()) -> any().
 
 foldr(S, F, A) when is_function(S, 0), is_function(F, 2) ->
     case ?FORCE(S) of
@@ -338,7 +338,7 @@ foldr(S, F, A) when is_function(S, 0), is_function(F, 2) ->
 %% @spec foreach(function(), stream()) -> ok
 %% @doc Evaluates F(E1), F(E2), ..., if S is [E1, E2, ...]. Always returns
 %% `ok'.
--spec(foreach/2 :: (function(), stream()) -> ok).
+-spec foreach(fun(), stream()) -> 'ok'.
 
 foreach(F, S) when is_function(F, 1), is_function(S, 0) ->
     case ?FORCE(S) of
