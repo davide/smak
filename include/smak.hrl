@@ -64,12 +64,15 @@
 %%----------------------------------------------------------------------
 %% Helper macros
 %%----------------------------------------------------------------------
+-define(EWGI_LOGGER_KEY, smak_logger).
 -define(CTX_LOG(Ctx, L, F, A),
-        case ewgi_api:find_data(smak_logger, Ctx) of
+        case ewgi_api:find_data(?EWGI_LOGGER_KEY, Ctx) of
             Log when is_function(Log, 3) ->
                 Log(L, F, A);
             _ ->
                 ok % silently ignore
         end).
+
+-type log_level() :: 'error' | 'info' | 'debug' | 'verbose'.
 
 -endif.
