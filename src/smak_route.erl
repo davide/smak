@@ -4,6 +4,16 @@
 %% @doc Smak URL routing.  We define a mechanism for building URL routes
 %% using regular expressions with the possibility of a naive reverse
 %% match which produces a URL from a set of matches.
+%%
+%% Examples:
+%%
+%% ["users/", {name, "\w+", "foo"}, "/"]
+%% gets mapped to a regular expression that looks like:
+%%     "^users/(?P<name>\w+)/$"
+%%
+%% ["users/", {name, "\w+"}, "/images"]
+%% becomes:
+%%     "^users/(?P<name>\w+)/images$"
 %% @end
 %%
 %% Licensed under the MIT license:
@@ -19,15 +29,27 @@
 
 -include("smak.hrl").
 
+%% @type regex() = string()
 -type regex() :: string().
+%% @type grpidx() = atom() | integer()
 -type grpidx() :: atom() | integer().
+%% @type mgroup() = {grpidx(), regex()} | {grpidx(), regex(), any()}
 -type mgroup() :: {grpidx(), regex()} | {grpidx(), regex(), any()}.
+%% @type pcond() = regex() | mgroup()
 -type pcond() :: regex() | mgroup().
+%% @type pattern() = [pcond()]
 -type pattern() :: [pcond()].
+%% @type rname() = string()
 -type rname() :: string().
+%% @type pmatch() = {atom(), string()}
 -type pmatch() :: {atom(), string()}.
+%% @type pmatches() = [pmatch()]
 -type pmatches() :: [pmatch()].
 
+%% @type route() = #route{pattern = pattern(),
+%%                        doc = binary(),
+%%                        subs = [grpidx()],
+%%                        name = rname()}
 -record(route, {
           pattern :: pattern(),
           doc :: binary(),
@@ -35,30 +57,37 @@
           name :: rname()
          }).
 
+%% @type croute() = #croute{route = route(),
+%%                          defaults = gb_tree(),
+%%                          regex = any()}
 -record(croute, {
           route :: #route{},
           defaults=gb_trees:empty() :: gb_tree(),
           regex=[] :: any() %% compiled regex
          }).
 
-%% ["users/", {name, "\w+", "foo"}, "/"]
-%% gets mapped to a regular expression that looks like:
-%%     "^users/(?P<name>\w+)/$"
-%%
-%% ["users/", {name, "\w+"}, "/images"]
-%% becomes:
-%%     "^users/(?P<name>\w+)/images$"
-
+%% @spec routes(Routes::[croute()]) -> gb_tree()
+%% @doc Creates a route lookup tree for the list of routes provided.
+%% @see route/4
 -spec routes([#croute{}]) -> gb_tree().
 routes(L) ->
     lists:foldl(fun(#croute{route=#route{name=K}}=V, T) ->
                         gb_trees:insert(K, V, T)
                 end, gb_trees:empty(), L).
 
+%% @spec routes_all() -> gb_tree()
+%% @doc Creates a route lookup tree by searching all loaded modules
+%% for a smak_routes/0 method which returns a list of routes.
+%% @see routes_all/1
 -spec routes_all() -> gb_tree().
 routes_all() ->
     routes_all([M || {M, _} <- code:all_loaded()]).
 
+%% @spec routes_all(Modules::[atom()]) -> gb_tree()
+%% @doc Creates a route lookup tree by searching the modules specified
+%% in Modules for a smak_routes/0 method which returns a list of
+%% routes.
+%% @see routes/1
 -spec routes_all([atom()]) -> gb_tree().
 routes_all(Modules) ->
     routes(lists:flatten([look_mod(M) || M <- Modules])).
@@ -78,14 +107,43 @@ look_mod(M) ->
             []
     end.
 
+%% @spec route(Name::rname(), Pattern::pattern()) -> croute()
+%% @equiv route(Name, <<"">>, Pat)
 -spec route(rname(), pattern()) -> #croute{}.
 route(Name, Pat) ->
     route(Name, <<"">>, Pat).
 
+%% @spec route(Name::rname(), Doc::binary(), Pattern:pattern()) -> croute()
+%% @equiv route(Name, Doc, Pat, [])
 -spec route(rname(), binary(), pattern()) -> #croute{}.
 route(Name, Doc, Pat) ->
     route(Name, Doc, Pat, []).
 
+%% @spec route(Name::rname(), Doc::binary(), Pattern::pattern(),
+%%             Groups::[grpidx()]) -> croute()
+%% @doc Creates a named route Name with a pattern specified by
+%% Pattern.  Doc is a documentation string held in the routing
+%% structure for introspection.  Only group names present in Groups
+%% will be returned in the resolve stage.
+%%
+%% A pattern is specified by a list of pattern elements which are
+%% matched in order from left to right.  Matching is similar to
+%% 'greedy' regular expression evaluation (in fact, the current
+%% implementation makes use of the PCRE 're' module).
+%%
+%% A route pattern consists of a literal or a match group:
+%% <dl>
+%% <dt>Literal</dt>
+%% <dd>A literal is simply a PCRE regular expression which must match
+%% the URI</dd>
+%% <dt>Match Group</dt>
+%% <dd>A match group is a 2 or 3-tuple of the form {Name, Expression}
+%% or {Name, Expression, Default} where Name is a string and
+%% Expression is a string representing a PCRE regular expression. The
+%% Default value is used if the expression segment doesn't match.</dd>
+%%
+%% Patterns concatenate the expressions to create a full URI regular
+%% expression.
 -spec route(rname(), binary(), pattern(), [grpidx()]) -> #croute{}.
 route(Name, Doc, Pat, G) ->
     Route = #route{pattern=Pat, name=Name, subs=G, doc=Doc},
@@ -114,6 +172,11 @@ rename(I) when is_integer(I) ->
 rename(L) when is_list(L) ->
     L.
 
+%% @spec resolve(Routes::gb_tree(), Url::string()) -> mresult()
+%%
+%% @type mresult() :: 'nomatch' | {rname(), pmatches()}
+%% @doc Resolve a particular URL using the routing tree.  Simply
+%% returns the match result for dispatching.
 -type mresult() :: 'nomatch' | {rname(), pmatches()}.
 -spec resolve(gb_tree(), string()) -> mresult().
 resolve(T, Url) ->
@@ -152,7 +215,10 @@ resolve_default({Name, []}=Orig, D) ->
 resolve_default(Orig, _) ->
     Orig.
 
-%% Naive reverse matching.  Ignores type of incoming data against pattern.
+%% @spec reverse(Routes::gb_tree, {rname(), pmatches()}) -> string() | 'nomatch'
+%% @doc Naive reverse matching.  Ignores type of incoming data against
+%% pattern.  Returns a url that fits the match specified.  If reverse
+%% isn't possible, returns 'nomatch'.
 -spec reverse(gb_tree(), {rname(), pmatches()}) -> string() | 'nomatch'.
 reverse(T, {N, L}) ->
     case gb_trees:lookup(N, T) of
