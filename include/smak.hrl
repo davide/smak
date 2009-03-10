@@ -61,4 +61,15 @@
 -type t_datetime()     :: {t_date(),t_time()}.
 -type t_datetime1970() :: {{year1970(),month(),day()},t_time()}.
 
+%%----------------------------------------------------------------------
+%% Helper macros
+%%----------------------------------------------------------------------
+-define(CTX_LOG(Ctx, L, F, A),
+        case ewgi_api:find_data(smak_logger, Ctx) of
+            Log when is_function(Log, 3) ->
+                Log(L, F, A);
+            _ ->
+                ok % silently ignore
+        end).
+
 -endif.
