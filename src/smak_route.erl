@@ -12,7 +12,7 @@
 -module(smak_route).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
--export([routes_all/0, routes/1]).
+-export([routes_all/0, routes_all/1, routes/1]).
 -export([resolve/2, reverse/2]).
 -export([route/2, route/3, route/4]).
 -export([test/0]).
@@ -57,7 +57,11 @@ routes(L) ->
 
 -spec routes_all() -> gb_tree().
 routes_all() ->
-    routes(lists:flatten([look_mod(M) || {M, _} <- code:all_loaded()])).
+    routes_all([M || {M, _} <- code:all_loaded()]).
+
+-spec routes_all([atom()]) -> gb_tree().
+routes_all(Modules) ->
+    routes(lists:flatten([look_mod(M) || M <- Modules])).
 
 -spec look_mod(atom()) -> [#croute{}].
 look_mod(M) ->
