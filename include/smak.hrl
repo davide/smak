@@ -75,4 +75,10 @@
 
 -type log_level() :: 'error' | 'info' | 'debug' | 'verbose'.
 
+-record(media_type, {
+          mime :: string(),
+          description :: string(),
+          parameters=[] :: [{string(), string()}]
+         }).
+
 -endif.
