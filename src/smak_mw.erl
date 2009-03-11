@@ -14,7 +14,7 @@
 
 -include("smak.hrl").
 
-%% @spec foldl(Ctx::ewgi_context(), L::[ewgi_app()]) -> ewgi_context().
+%% @spec foldl(Ctx::ewgi_context(), L::[ewgi_app()]) -> ewgi_context()
 %% @doc Fold over middleware components L, processing each one with
 %% process/2.
 %% @see foldr/2
@@ -22,14 +22,14 @@
 foldl(Ctx0, L) when is_record(Ctx0, ewgi_context), is_list(L) ->
     lists:foldl(fun process/2, Ctx0, L).
 
-%% @spec foldr(Ctx::ewgi_context(), L::[ewgi_app()]) -> ewgi_context().
+%% @spec foldr(Ctx::ewgi_context(), L::[ewgi_app()]) -> ewgi_context()
 %% @doc Same as foldl/2 but in the opposite direction.
 %% @see foldl/2
 -spec foldr(#ewgi_context{}, [ewgi_app()]) -> #ewgi_context{}.
 foldr(Ctx0, L) when is_record(Ctx0, ewgi_context), is_list(L) ->
     lists:foldr(fun process/2, Ctx0, L).
 
-%% @spec process(F::ewgi_app(), Ctx::ewgi_context()) -> ewgi_context().
+%% @spec process(F::ewgi_app(), Ctx::ewgi_context()) -> ewgi_context()
 %% @doc If the context contains no errors, processes a middleware
 %% component.  If the middleware generates an error, it is optionally
 %% logged and an error is returned.
@@ -48,14 +48,14 @@ process(F, Ctx) when is_record(Ctx, ewgi_context), ?IS_EWGI_APPLICATION(F) ->
             Ctx
     end.
 
-%% @spec noop() -> ewgi_app().
+%% @spec noop() -> ewgi_app()
 %% @doc Simple 'noop' middleware that returns the EWGI context unchanged.
 -spec noop() -> ewgi_app().
 noop() ->
     fun(Ctx) -> Ctx end.
 
-%% @spec compose(G::ewgi_app(), F::ewgi_app()) -> ewgi_app().
-%% @doc Compose two EWGI applications: G ∘ F
+%% @spec compose(G::ewgi_app(), F::ewgi_app()) -> ewgi_app()
+%% @doc Compose two EWGI applications: G &#x2218; F
 %% Equivalent to: fun(C) -> G(F(C)) end.
 -spec compose(ewgi_app(), ewgi_app()) -> ewgi_app().
 compose(G, F) ->

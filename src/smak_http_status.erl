@@ -1,5 +1,5 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
-%% @copyright 2008 Smarkets Limited.
+%% @copyright 2009 Smarkets Limited.
 %%
 %% @doc Smak HTTP status methods. A middleware application is provided which
 %% catches exceptions of a special form and displays the appropriate status

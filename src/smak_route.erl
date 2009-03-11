@@ -4,9 +4,9 @@
 %% @doc Smak URL routing.  We define a mechanism for building URL routes
 %% using regular expressions with the possibility of a naive reverse
 %% match which produces a URL from a set of matches.
-%%
+%% 
 %% Examples:
-%%
+%% ```
 %% ["users/", {name, "\w+", "foo"}, "/"]
 %% gets mapped to a regular expression that looks like:
 %%     "^users/(?P<name>\w+)/$"
@@ -14,6 +14,7 @@
 %% ["users/", {name, "\w+"}, "/images"]
 %% becomes:
 %%     "^users/(?P<name>\w+)/images$"
+%% '''
 %% @end
 %%
 %% Licensed under the MIT license:
@@ -113,7 +114,7 @@ look_mod(M) ->
 route(Name, Pat) ->
     route(Name, <<"">>, Pat).
 
-%% @spec route(Name::rname(), Doc::binary(), Pattern:pattern()) -> croute()
+%% @spec route(Name::rname(), Doc::binary(), Pattern::pattern()) -> croute()
 %% @equiv route(Name, Doc, Pat, [])
 -spec route(rname(), binary(), pattern()) -> #croute{}.
 route(Name, Doc, Pat) ->
@@ -125,7 +126,7 @@ route(Name, Doc, Pat) ->
 %% Pattern.  Doc is a documentation string held in the routing
 %% structure for introspection.  Only group names present in Groups
 %% will be returned in the resolve stage.
-%%
+%% 
 %% A pattern is specified by a list of pattern elements which are
 %% matched in order from left to right.  Matching is similar to
 %% 'greedy' regular expression evaluation (in fact, the current
@@ -133,14 +134,16 @@ route(Name, Doc, Pat) ->
 %%
 %% A route pattern consists of a literal or a match group:
 %% <dl>
-%% <dt>Literal</dt>
-%% <dd>A literal is simply a PCRE regular expression which must match
-%% the URI</dd>
-%% <dt>Match Group</dt>
-%% <dd>A match group is a 2 or 3-tuple of the form {Name, Expression}
-%% or {Name, Expression, Default} where Name is a string and
-%% Expression is a string representing a PCRE regular expression. The
-%% Default value is used if the expression segment doesn't match.</dd>
+%%   <dt>Literal</dt>
+%%   <dd>A literal is simply a PCRE regular expression which must
+%%       match the URI</dd>
+%%   <dt>Match Group</dt>
+%%   <dd>A match group is a 2 or 3-tuple of the form {Name,
+%%       Expression} or {Name, Expression, Default} where Name is a
+%%       string and Expression is a string representing a PCRE regular
+%%       expression. The Default value is used if the expression
+%%       segment doesn't match.</dd>
+%% </dl>
 %%
 %% Patterns concatenate the expressions to create a full URI regular
 %% expression.
@@ -174,7 +177,7 @@ rename(L) when is_list(L) ->
 
 %% @spec resolve(Routes::gb_tree(), Url::string()) -> mresult()
 %%
-%% @type mresult() :: 'nomatch' | {rname(), pmatches()}
+%% @type mresult() = 'nomatch' | {rname(), pmatches()}
 %% @doc Resolve a particular URL using the routing tree.  Simply
 %% returns the match result for dispatching.
 -type mresult() :: 'nomatch' | {rname(), pmatches()}.

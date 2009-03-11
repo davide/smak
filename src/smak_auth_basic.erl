@@ -1,5 +1,5 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
-%% @copyright 2008 Smarkets Limited.
+%% @copyright 2009 Smarkets Limited.
 %%
 %% @doc Smak basic authentication middleware. This middleware should be
 %% avoided unless you need to support older HTTP 1.0 clients over SSL. Digest
@@ -20,7 +20,7 @@
 
 -include("smak.hrl").
 
-%% @spec init(ewgi_app(), Realm::string(), Auth::function()) -> ewgi_app().
+%% @spec init(ewgi_app(), Realm::string(), Auth::function()) -> ewgi_app()
 %% @doc Initializes basic authentication middleware.
 -spec init(ewgi_app(), string(), function()) -> ewgi_app().
 init(Application, Realm, AuthFunc) when ?IS_EWGI_APPLICATION(Application),

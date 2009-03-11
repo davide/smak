@@ -1,5 +1,5 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
-%% @copyright 2008 Smarkets Limited.
+%% @copyright 2009 Smarkets Limited.
 
 %% @doc Smak "streams" implementation for compatibility with EWGI. It makes
 %% extensive use of the DELAY and FORCE macros to make the code slightly more

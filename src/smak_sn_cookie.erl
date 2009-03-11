@@ -1,5 +1,5 @@
 %% @author Hunter Morris <hunter.morris@smarkets.com>
-%% @copyright 2008 Smarkets Limited.
+%% @copyright 2009 Smarkets Limited.
 %%
 %% @doc Implementation of compressed, signed, encrypted share-nothing
 %% cookie-based sessions.

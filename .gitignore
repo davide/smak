@@ -4,3 +4,6 @@ erl_crash.dump
 
 ## Erlware-specific build files
 _build
+
+## EDoc
+doc/*
