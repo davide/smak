@@ -23,10 +23,11 @@
 -module(smak_route).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
+-include_lib("eunit/include/eunit.hrl").
+
 -export([routes_all/0, routes_all/1, routes/1]).
 -export([resolve/2, reverse/2]).
 -export([route/2, route/3, route/4]).
--export([test/0]).
 
 -include("smak.hrl").
 
@@ -249,12 +250,13 @@ reverse1([{Name, _}|T], L, Acc) ->
             reverse1(T, L, [V|Acc])
     end.
 
--spec test() -> 'ok'.
-test() ->
+%%----------------------------------------------------------------------
+%% Unit tests
+%%----------------------------------------------------------------------
+
+route_test_() ->
     R0 = route("foo", <<"">>, ["/", {1, "url"}, "/", {bar, "\\w+", "bar"}, "/", {baz, "\\d+", "0"}, "/"], [1, bar, baz]),
     R1 = route("baz", <<"">>, ["/", {1, "static"}, "/"], []),
     Routes = routes([R0, R1]),
     Url = "/url/test/100/",
-    M = resolve(Routes, Url),
-    Url = reverse(Routes, M),
-    ok.
+    [?_assertEqual(Url, reverse(Routes, resolve(Routes, Url)))].
