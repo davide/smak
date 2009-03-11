@@ -11,6 +11,7 @@
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
 -export([foldl/2, foldr/2, process/2, noop/0, compose/2]).
+-export([wrapper/3]).
 
 -include("smak.hrl").
 
@@ -58,5 +59,17 @@ noop() ->
 %% @doc Compose two EWGI applications: G &#x2218; F
 %% Equivalent to: fun(C) -> G(F(C)) end.
 -spec compose(ewgi_app(), ewgi_app()) -> ewgi_app().
-compose(G, F) ->
+compose(G, F) when ?IS_EWGI_APPLICATION(G), ?IS_EWGI_APPLICATION(F)->
     fun(Ctx) -> G(F(Ctx)) end.
+
+%% @spec wrapper(ReqHandler::ewgi_app(),
+%%               RespHandler::ewgi_app(),
+%%               App::ewgi_app()) -> ewgi_app()
+%% @doc Creates a 'wrapper' EWGI application which combines a request
+%% handler app (called before the inner application) and a response
+%% handler app (called with the result of the inner application).
+%% @equiv compose(Resp, compose(App, Req))
+wrapper(Req, Resp, App) when ?IS_EWGI_APPLICATION(Req),
+                             ?IS_EWGI_APPLICATION(Resp),
+                             ?IS_EWGI_APPLICATION(App) ->
+    compose(Resp, compose(App, Req)).
