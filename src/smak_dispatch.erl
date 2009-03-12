@@ -14,26 +14,46 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--export([pat_dispatcher/1, tree_dispatcher/2]).
+-export([pat_dispatcher/2, tree_dispatcher/2]).
 
 -include("smak.hrl").
 
-%% @spec pat_dispatcher(DispatchFun::fun()) -> ewgi_app()
+-type dispatch_app() :: fun((#ewgi_context{}, route_pmatches()) -> #ewgi_context{}).
+%% @type dispatch_app() = function()
+
+%% @spec pat_dispatcher(DispatchFun::function(),
+%%                      NotFound::ewgi_app()) -> ewgi_app()
 %% @doc Returns an EWGI dispatcher application which uses DispatchFun
 %% to find the correct application to handle the request.
 %% 
 %% Example:
 %% ```
-%% App = pat_dispatcher(fun("foo_resource") -> fun foo_resource:ewgi/1;
-%%                         ("bar_resource") -> fun bar_resource:ewgi/1;
-%%                         (undefined) -> fun error_handler:app_404/1
-%%                      end).
+%% App = pat_dispatcher(fun("foo_resource") -> fun foo_resource:ewgi/2;
+%%                         ("bar_resource") -> fun bar_resource:ewgi/2
+%%                      end,
+%%                      fun error_handler:not_found/1).
 %% '''
--spec pat_dispatcher(fun((string()) -> ewgi_app())) -> ewgi_app().
-pat_dispatcher(F) when is_function(F, 1) ->
+%% 
+%% If the URL matches the route "foo_resource", it is called as:
+%% ```
+%% foo_resource:ewgi(Ctx, [{arg1, "qux"}, {arg2, "yggdrasil"}])
+%% '''
+%% 
+%% The dispatcher application is similar to a typical EWGI application
+%% but has an additional proplists for performance and readability.
+%% 
+%% The special case of the NotFound route should be a simple EWGI
+%% application as the arguments are unncessary.
+-spec pat_dispatcher(fun((string()) -> dispatch_app()),
+                        ewgi_app()) -> ewgi_app().
+pat_dispatcher(F, NotFound) when is_function(F, 1) ->
     fun(Ctx0) ->
-            Route = ewgi_api:find_data(?ROUTE_KEY, Ctx0),
-            (F(Route))(Ctx0)
+            case ewgi_api:find_data(?ROUTE_KEY, Ctx0, nomatch) of
+                {Name, Args} ->
+                    (F(Name))(Ctx0, Args);
+                nomatch ->
+                    NotFound(Ctx0)
+            end
     end.
 
 %% @spec tree_dispatcher(DispatchTree::gb_tree(),
@@ -45,18 +65,23 @@ pat_dispatcher(F) when is_function(F, 1) ->
 %% Example:
 %% ```
 %% App = tree_dispatcher(
-%%         gb_trees:from_orddict([{"foo", fun foo_resource:ewgi/1},
-%%                                {"bar", fun bar_resource:ewgi/1}]),
+%%         gb_trees:from_orddict([{"foo", fun foo_resource:ewgi/2},
+%%                                {"bar", fun bar_resource:ewgi/2}]),
 %%         fun error_handler:not_found/1).
 %% '''
+%% @see pat_dispatcher/1
 -spec tree_dispatcher(gb_tree(), ewgi_app()) -> ewgi_app().
 tree_dispatcher(Tree, NotFound) when ?IS_EWGI_APPLICATION(NotFound) ->
     fun(Ctx0) ->
-            Route = ewgi_api:find_data(?ROUTE_KEY, Ctx0),
-            case gb_trees:lookup(Route, Tree) of
-                {value, App} ->
-                    App(Ctx0);
-                none ->
+            case ewgi_api:find_data(?ROUTE_KEY, Ctx0, nomatch) of
+                {Name, Args} ->
+                    case gb_trees:lookup(Name, Tree) of
+                        {value, App} ->
+                            App(Ctx0, Args);
+                        none ->
+                            NotFound(Ctx0)
+                    end;
+                nomatch ->
                     NotFound(Ctx0)
             end
     end.

@@ -85,4 +85,11 @@
 -define(ROUTE_TREE_KEY, '_smak_routes').
 -define(ROUTE_PATH_KEY, '_smak_routepath').
 
+%% @type route_name() = string()
+-type route_name() :: string().
+%% @type route_pmatch() = {atom(), string()}
+-type route_pmatch() :: {atom(), string()}.
+%% @type route_pmatches() = [route_pmatch()]
+-type route_pmatches() :: [route_pmatch()].
+
 -endif.

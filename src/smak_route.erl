@@ -42,22 +42,16 @@
 -type pcond() :: regex() | mgroup().
 %% @type pattern() = [pcond()]
 -type pattern() :: [pcond()].
-%% @type rname() = string()
--type rname() :: string().
-%% @type pmatch() = {atom(), string()}
--type pmatch() :: {atom(), string()}.
-%% @type pmatches() = [pmatch()]
--type pmatches() :: [pmatch()].
 
 %% @type route() = #route{pattern = pattern(),
 %%                        doc = binary(),
 %%                        subs = [grpidx()],
-%%                        name = rname()}
+%%                        name = route_name()}
 -record(route, {
           pattern :: pattern(),
           doc :: binary(),
           subs=[] :: [grpidx()],
-          name :: rname()
+          name :: route_name()
          }).
 
 %% @type croute() = #croute{route = route(),
@@ -124,19 +118,19 @@ look_mod(M) ->
             []
     end.
 
-%% @spec route(Name::rname(), Pattern::pattern()) -> croute()
+%% @spec route(Name::route_name(), Pattern::pattern()) -> croute()
 %% @equiv route(Name, <<"">>, Pat)
--spec route(rname(), pattern()) -> #croute{}.
+-spec route(route_name(), pattern()) -> #croute{}.
 route(Name, Pat) ->
     route(Name, <<"">>, Pat).
 
-%% @spec route(Name::rname(), Doc::binary(), Pattern::pattern()) -> croute()
+%% @spec route(Name::route_name(), Doc::binary(), Pattern::pattern()) -> croute()
 %% @equiv route(Name, Doc, Pat, [])
--spec route(rname(), binary(), pattern()) -> #croute{}.
+-spec route(route_name(), binary(), pattern()) -> #croute{}.
 route(Name, Doc, Pat) ->
     route(Name, Doc, Pat, []).
 
-%% @spec route(Name::rname(), Doc::binary(), Pattern::pattern(),
+%% @spec route(Name::route_name(), Doc::binary(), Pattern::pattern(),
 %%             Groups::[grpidx()]) -> croute()
 %% @doc Creates a named route Name with a pattern specified by
 %% Pattern.  Doc is a documentation string held in the routing
@@ -163,7 +157,7 @@ route(Name, Doc, Pat) ->
 %%
 %% Patterns concatenate the expressions to create a full URI regular
 %% expression.
--spec route(rname(), binary(), pattern(), [grpidx()]) -> #croute{}.
+-spec route(route_name(), binary(), pattern(), [grpidx()]) -> #croute{}.
 route(Name, Doc, Pat, G) ->
     Route = #route{pattern=Pat, name=Name, subs=G, doc=Doc},
     C0 = lists:foldl(fun compile_re/2, #croute{route=Route}, Pat),
@@ -193,10 +187,10 @@ rename(L) when is_list(L) ->
 
 %% @spec resolve(Routes::gb_tree() | ewgi_context(), Url::string()) -> mresult()
 %%
-%% @type mresult() = 'nomatch' | {rname(), pmatches()}
+%% @type mresult() = 'nomatch' | {route_name(), route_pmatches()}
 %% @doc Resolve a particular URL using the routing tree.  Simply
 %% returns the match result for dispatching.
--type mresult() :: 'nomatch' | {rname(), pmatches()}.
+-type mresult() :: 'nomatch' | {route_name(), route_pmatches()}.
 -spec resolve(gb_tree() | #ewgi_context{}, string()) -> mresult().
 resolve(Ctx, Url) when is_record(Ctx, ewgi_context) ->
     Routes = ewgi_api:find_data(?ROUTE_TREE_KEY, Ctx, gb_trees:empty()),
@@ -204,7 +198,7 @@ resolve(Ctx, Url) when is_record(Ctx, ewgi_context) ->
 resolve(T, Url) ->
     resolve(gb_trees:to_list(T), Url, nomatch).
 
--spec resolve([{rname(), #croute{}}], string(), mresult()) -> mresult().
+-spec resolve([{route_name(), #croute{}}], string(), mresult()) -> mresult().
 resolve([{N, H}|T], Url, nomatch) ->
     case resolve1(H, Url) of
         nomatch ->
@@ -215,7 +209,7 @@ resolve([{N, H}|T], Url, nomatch) ->
 resolve(_, _, Acc) ->
     Acc.
 
--spec resolve1(#croute{}, string()) -> 'nomatch' | pmatches().
+-spec resolve1(#croute{}, string()) -> 'nomatch' | route_pmatches().
 resolve1(#croute{route=#route{subs=S}, regex=R, defaults=D}, Url) ->
     case re:run(Url, R, [{capture, S, list}]) of
         {match, L} when is_list(L) ->
@@ -226,7 +220,7 @@ resolve1(#croute{route=#route{subs=S}, regex=R, defaults=D}, Url) ->
             []
     end.
 
--spec resolve_default(pmatch(), gb_tree()) -> pmatch().
+-spec resolve_default(route_pmatch(), gb_tree()) -> route_pmatch().
 resolve_default({Name, []}=Orig, D) ->
     case gb_trees:lookup(Name, D) of
         {value, V} ->
@@ -238,12 +232,12 @@ resolve_default(Orig, _) ->
     Orig.
 
 %% @spec reverse(Routes::gb_tree() | ewgi_context(),
-%%               {rname(), pmatches()}) -> string() | 'nomatch'
+%%               {route_name(), route_pmatches()}) -> string() | 'nomatch'
 %% @doc Naive reverse matching.  Ignores type of incoming data against
 %% pattern.  Returns a url that fits the match specified.  If reverse
 %% isn't possible, returns 'nomatch'.
 -spec reverse(gb_tree() | #ewgi_context{},
-              {rname(), pmatches()}) -> string() | 'nomatch'.
+              {route_name(), route_pmatches()}) -> string() | 'nomatch'.
 reverse(Ctx, M) when is_record(Ctx, ewgi_context) ->
     Routes = ewgi_api:find_data(?ROUTE_TREE_KEY, Ctx, gb_trees:empty()),
     reverse(Routes, M);
@@ -255,7 +249,7 @@ reverse(T, {N, L}) ->
             reverse1(C, L)
     end.
 
--spec reverse1(#croute{}, pmatches()) -> string() | {'error', key_not_found, atom()}.
+-spec reverse1(#croute{}, route_pmatches()) -> string() | {'error', 'key_not_found', atom()}.
 reverse1(#croute{route=#route{pattern=P}}, L) ->
     reverse1(P, L, []).
 
