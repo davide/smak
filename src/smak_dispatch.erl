@@ -14,24 +14,24 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--export([pat_dispatcher/2, tree_dispatcher/2]).
+-export([pattern/2, gb_tree/2]).
 
 -include("smak.hrl").
 
 -type dispatch_app() :: fun((#ewgi_context{}, route_pmatches()) -> #ewgi_context{}).
 %% @type dispatch_app() = function()
 
-%% @spec pat_dispatcher(DispatchFun::function(),
-%%                      NotFound::ewgi_app()) -> ewgi_app()
+%% @spec pattern(DispatchFun::function(),
+%%               NotFound::ewgi_app()) -> ewgi_app()
 %% @doc Returns an EWGI dispatcher application which uses DispatchFun
 %% to find the correct application to handle the request.
 %% 
 %% Example:
 %% ```
-%% App = pat_dispatcher(fun("foo_resource") -> fun foo_resource:ewgi/2;
-%%                         ("bar_resource") -> fun bar_resource:ewgi/2
-%%                      end,
-%%                      fun error_handler:not_found/1).
+%% App = pattern(fun("foo_resource") -> fun foo_resource:ewgi/2;
+%%                  ("bar_resource") -> fun bar_resource:ewgi/2
+%%               end,
+%%               fun error_handler:not_found/1).
 %% '''
 %% 
 %% If the URL matches the route "foo_resource", it is called as:
@@ -44,9 +44,9 @@
 %% 
 %% The special case of the NotFound route should be a simple EWGI
 %% application as the arguments are unncessary.
--spec pat_dispatcher(fun((string()) -> dispatch_app()),
+-spec pattern(fun((string()) -> dispatch_app()),
                         ewgi_app()) -> ewgi_app().
-pat_dispatcher(F, NotFound) when is_function(F, 1) ->
+pattern(F, NotFound) when is_function(F, 1) ->
     fun(Ctx0) ->
             case ewgi_api:find_data(?ROUTE_KEY, Ctx0, nomatch) of
                 {Name, Args} ->
@@ -56,22 +56,22 @@ pat_dispatcher(F, NotFound) when is_function(F, 1) ->
             end
     end.
 
-%% @spec tree_dispatcher(DispatchTree::gb_tree(),
-%%                       NotFound::ewgi_app()) -> ewgi_app()
+%% @spec gb_tree(DispatchTree::gb_tree(),
+%%               NotFound::ewgi_app()) -> ewgi_app()
 %% @doc Returns an EWGI dispatcher application which uses DispatchTree
 %% to find the correct application to handle the request.  If no
 %% application is found, the NotFound application is used.
 %% 
 %% Example:
 %% ```
-%% App = tree_dispatcher(
+%% App = gb_tree(
 %%         gb_trees:from_orddict([{"foo", fun foo_resource:ewgi/2},
 %%                                {"bar", fun bar_resource:ewgi/2}]),
 %%         fun error_handler:not_found/1).
 %% '''
-%% @see pat_dispatcher/1
--spec tree_dispatcher(gb_tree(), ewgi_app()) -> ewgi_app().
-tree_dispatcher(Tree, NotFound) when ?IS_EWGI_APPLICATION(NotFound) ->
+%% @see pattern/2
+-spec gb_tree(gb_tree(), ewgi_app()) -> ewgi_app().
+gb_tree(Tree, NotFound) when ?IS_EWGI_APPLICATION(NotFound) ->
     fun(Ctx0) ->
             case ewgi_api:find_data(?ROUTE_KEY, Ctx0, nomatch) of
                 {Name, Args} ->
