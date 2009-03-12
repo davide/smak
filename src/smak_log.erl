@@ -12,6 +12,7 @@
 -module(smak_log).
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
+-export([start_link/0, start_link/1]).
 -export([init/1, level_compare/2]).
 
 -include("smak.hrl").
@@ -19,12 +20,22 @@
 %% @type sl_option() = {name, atom()}
 -type sl_option() :: {'name', atom()}.
 
+-type start_result() :: {'ok', pid()} | {error, {'already_started', pid()}} | {error, any()}.
+
+-spec start_link() -> start_result().
+start_link() ->
+    start_link({local, ?EWGI_LOGGER_NAME}).
+
+-spec start_link({'local', atom()} | {'global', atom()}) -> start_result().
+start_link(Name) ->
+    gen_event:start_link(Name).
+
 %% @spec init(Options::[sl_option()]) -> ewgi_app()
 %% @doc Initialises the logging middleware which provides a function
 %% for logging from an application.
 -spec init([sl_option()]) -> ewgi_app().
 init(Options) when is_list(Options) ->
-    Name = proplists:get_value(name, Options, ?EWGI_LOGGER_KEY),
+    Name = proplists:get_value(name, Options, ?EWGI_LOGGER_NAME),
     F = fun(Ctx0) ->
                 ewgi_api:store_data(?EWGI_LOGGER_KEY, log_event(Name), Ctx0)
         end,

@@ -15,7 +15,7 @@
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 -behaviour(gen_event).
 
--export([add/2, delete/1]).
+-export([add/1, add/2, delete/0, delete/1]).
 -export([init/1, handle_event/2, terminate/2, code_change/3, handle_call/2, handle_info/2]).
 
 -include("smak.hrl").
@@ -26,9 +26,17 @@
           level :: log_level()
          }).
 
--spec add(atom(), [slc_option()]) -> ok.
+-spec add([slc_option()]) -> 'ok'.
+add(Options) ->
+    add(?EWGI_LOGGER_NAME, Options).
+
+-spec add(atom(), [slc_option()]) -> 'ok'.
 add(Name, Options) ->
     gen_event:add_handler(Name, ?MODULE, Options).
+
+-spec delete() -> 'ok'.
+delete() ->
+    delete(?EWGI_LOGGER_NAME).
 
 -spec delete(atom()) -> 'ok'.
 delete(Name) ->

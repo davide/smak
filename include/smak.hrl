@@ -64,6 +64,7 @@
 %%----------------------------------------------------------------------
 %% Helper macros
 %%----------------------------------------------------------------------
+-define(EWGI_LOGGER_NAME, smak_logger).
 -define(EWGI_LOGGER_KEY, '_smak_logger').
 -define(CTX_LOG(Ctx, L, F, A),
         case ewgi_api:find_data(?EWGI_LOGGER_KEY, Ctx) of
