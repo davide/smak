@@ -82,5 +82,7 @@
          }).
 
 -define(ROUTE_KEY, '_smak_route').
+-define(ROUTE_TREE_KEY, '_smak_routes').
+-define(ROUTE_PATH_KEY, '_smak_routepath').
 
 -endif.

@@ -25,6 +25,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+-export([init/1]).
 -export([routes_all/0, routes_all/1, routes/1]).
 -export([resolve/2, reverse/2]).
 -export([route/2, route/3, route/4]).
@@ -67,6 +68,20 @@
           defaults=gb_trees:empty() :: gb_tree(),
           regex=[] :: any() %% compiled regex
          }).
+
+%% @spec init(Routes::gb_tree()) -> ewgi_app()
+%% @doc Initialises an EWGI middleware application which uses the
+%% route resolving in this module to map a URL to a sub-application.
+%% Attaches routes to the request so that reverse lookups are
+%% possible.
+-spec init(gb_tree()) -> ewgi_app().
+init(Routes) ->
+    fun(Ctx0) ->
+            Ctx = ewgi_api:store_data(?ROUTE_TREE_KEY, Routes, Ctx0),
+            Url = ewgi_api:find_data(?ROUTE_PATH_KEY, Ctx,
+                                     ewgi_api:path_info(Ctx)),
+            ewgi_api:store_data(?ROUTE_KEY, resolve(Routes, Url), Ctx)
+    end.
 
 %% @spec routes(Routes::[croute()]) -> gb_tree()
 %% @doc Creates a route lookup tree for the list of routes provided.
@@ -176,13 +191,16 @@ rename(I) when is_integer(I) ->
 rename(L) when is_list(L) ->
     L.
 
-%% @spec resolve(Routes::gb_tree(), Url::string()) -> mresult()
+%% @spec resolve(Routes::gb_tree() | ewgi_context(), Url::string()) -> mresult()
 %%
 %% @type mresult() = 'nomatch' | {rname(), pmatches()}
 %% @doc Resolve a particular URL using the routing tree.  Simply
 %% returns the match result for dispatching.
 -type mresult() :: 'nomatch' | {rname(), pmatches()}.
--spec resolve(gb_tree(), string()) -> mresult().
+-spec resolve(gb_tree() | #ewgi_context{}, string()) -> mresult().
+resolve(Ctx, Url) when is_record(Ctx, ewgi_context) ->
+    Routes = ewgi_api:find_data(?ROUTE_TREE_KEY, Ctx, gb_trees:empty()),
+    resolve(Routes, Url);
 resolve(T, Url) ->
     resolve(gb_trees:to_list(T), Url, nomatch).
 
@@ -219,11 +237,16 @@ resolve_default({Name, []}=Orig, D) ->
 resolve_default(Orig, _) ->
     Orig.
 
-%% @spec reverse(Routes::gb_tree, {rname(), pmatches()}) -> string() | 'nomatch'
+%% @spec reverse(Routes::gb_tree() | ewgi_context(),
+%%               {rname(), pmatches()}) -> string() | 'nomatch'
 %% @doc Naive reverse matching.  Ignores type of incoming data against
 %% pattern.  Returns a url that fits the match specified.  If reverse
 %% isn't possible, returns 'nomatch'.
--spec reverse(gb_tree(), {rname(), pmatches()}) -> string() | 'nomatch'.
+-spec reverse(gb_tree() | #ewgi_context{},
+              {rname(), pmatches()}) -> string() | 'nomatch'.
+reverse(Ctx, M) when is_record(Ctx, ewgi_context) ->
+    Routes = ewgi_api:find_data(?ROUTE_TREE_KEY, Ctx, gb_trees:empty()),
+    reverse(Routes, M);
 reverse(T, {N, L}) ->
     case gb_trees:lookup(N, T) of
         none ->
