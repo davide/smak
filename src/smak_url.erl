@@ -74,6 +74,7 @@
          defrag/1]).
 
 -include("smak.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 -define(IS_ALWAYS_SAFE(C), (((C >= $A) and (C =< $Z))
                             or ((C >= $a) and (C =< $z))
@@ -453,45 +454,34 @@ defrag(Url) when is_list(Url) ->
 
 %% TODO: Move this to eunit or something useful
 -define(_TEST_BASE, "http://a/b/c/d").
--define(TESTS, [{"g:h", [?_TEST_BASE, "g:h"]},
-                {"http://a/b/c/g", [?_TEST_BASE, "http:g"]},
-                {"http://a/b/c/d", [?_TEST_BASE, "http:"]},
-                {"http://a/b/c/g", [?_TEST_BASE, "g"]},
-                {"http://a/b/c/g", [?_TEST_BASE, "./g"]},
-                {"http://a/b/c/g/", [?_TEST_BASE, "g/"]},
-                {"http://a/g", [?_TEST_BASE, "/g"]},
-                {"http://g", [?_TEST_BASE, "//g"]}, %% Error
-                {"http://a/b/c/d?y", [?_TEST_BASE, "?y"]},
-                {"http://a/b/c/g?y", [?_TEST_BASE, "g?y"]},
-                {"http://a/b/c/g?y/./x", [?_TEST_BASE, "g?y/./x"]},
-                {"http://a/b/c/", [?_TEST_BASE, "."]},
-                {"http://a/b/c/", [?_TEST_BASE, "./"]},
-                {"http://a/b/", [?_TEST_BASE, ".."]}, %% Error
-                {"http://a/b/", [?_TEST_BASE, "../"]},
-                {"http://a/b/g", [?_TEST_BASE, "../g"]},
-                {"http://a/", [?_TEST_BASE, "../.."]},
-                {"http://a/g", [?_TEST_BASE, "../../g"]}, %% Error
-                {"http://a/../g", [?_TEST_BASE, "../../../g"]}, %% Error
-                {"http://a/b/g", [?_TEST_BASE, "./../g"]},
-                {"http://a/b/c/g/", [?_TEST_BASE, "./g/."]},
-                {"http://a/./g", [?_TEST_BASE, "/./g"]},
-                {"http://a/b/c/g/h", [?_TEST_BASE, "g/./h"]},
-                {"http://a/b/c/h", [?_TEST_BASE, "g/../h"]}, %% Error
-                {"http://a/b/c/g", [?_TEST_BASE, "http:g"]},
-                {"http://a/b/c/d", [?_TEST_BASE, "http:"]},
-                {"http://a/b/c/d?y", [?_TEST_BASE, "http:?y"]},
-                {"http://a/b/c/g?y", [?_TEST_BASE, "http:g?y"]},
-                {"http://a/b/c/g?y/./x", [?_TEST_BASE, "http:g?y/./x"]}].
 
-test() ->
-    lists:map(fun({Result, Args}) ->
-                      io:format("~p = join(~p)...", [Result, Args]),
-                      case apply(?MODULE, join, Args) of
-                          Result ->
-                              io:format("ok~n"),
-                              ok;
-                          Err ->
-                              io:format("ERROR (got ~p)~n", [Err]),
-                              {error, Err}
-                      end
-              end, ?TESTS).
+join_test_() ->
+    [?_assertEqual("g:h", join(?_TEST_BASE, "g:h")),
+     ?_assertEqual("http://a/b/c/g", join(?_TEST_BASE, "http:g")),
+     ?_assertEqual("http://a/b/c/d", join(?_TEST_BASE, "http:")),
+     ?_assertEqual("http://a/b/c/g", join(?_TEST_BASE, "g")),
+     ?_assertEqual("http://a/b/c/g", join(?_TEST_BASE, "./g")),
+     ?_assertEqual("http://a/b/c/g/", join(?_TEST_BASE, "g/")),
+     ?_assertEqual("http://a/g", join(?_TEST_BASE, "/g")),
+     ?_assertEqual("http://g", join(?_TEST_BASE, "//g")), %% Error
+     ?_assertEqual("http://a/b/c/d?y", join(?_TEST_BASE, "?y")),
+     ?_assertEqual("http://a/b/c/g?y", join(?_TEST_BASE, "g?y")),
+     ?_assertEqual("http://a/b/c/g?y/./x", join(?_TEST_BASE, "g?y/./x")),
+     ?_assertEqual("http://a/b/c/", join(?_TEST_BASE, ".")),
+     ?_assertEqual("http://a/b/c/", join(?_TEST_BASE, "./")),
+     ?_assertEqual("http://a/b/", join(?_TEST_BASE, "..")), %% Error
+     ?_assertEqual("http://a/b/", join(?_TEST_BASE, "../")),
+     ?_assertEqual("http://a/b/g", join(?_TEST_BASE, "../g")),
+     ?_assertEqual("http://a/", join(?_TEST_BASE, "../..")),
+     ?_assertEqual("http://a/g", join(?_TEST_BASE, "../../g")), %% Error
+     ?_assertEqual("http://a/../g", join(?_TEST_BASE, "../../../g")), %% Error
+     ?_assertEqual("http://a/b/g", join(?_TEST_BASE, "./../g")),
+     ?_assertEqual("http://a/b/c/g/", join(?_TEST_BASE, "./g/.")),
+     ?_assertEqual("http://a/./g", join(?_TEST_BASE, "/./g")),
+     ?_assertEqual("http://a/b/c/g/h", join(?_TEST_BASE, "g/./h")),
+     ?_assertEqual("http://a/b/c/h", join(?_TEST_BASE, "g/../h")), %% Error
+     ?_assertEqual("http://a/b/c/g", join(?_TEST_BASE, "http:g")),
+     ?_assertEqual("http://a/b/c/d", join(?_TEST_BASE, "http:")),
+     ?_assertEqual("http://a/b/c/d?y", join(?_TEST_BASE, "http:?y")),
+     ?_assertEqual("http://a/b/c/g?y", join(?_TEST_BASE, "http:g?y")),
+     ?_assertEqual("http://a/b/c/g?y/./x", join(?_TEST_BASE, "http:g?y/./x"))].

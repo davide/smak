@@ -10,7 +10,7 @@ erl: ebin lib
 	-eval 'case make:all() of up_to_date -> halt(0); error -> halt(1) end.'
 
 docs:
-	@erl -noshell -run edoc_run application '$(APP)' '"."' '[]'
+	@$(ERL) -noshell -run edoc_run application '$(APP)' '"."' '[]'
 
 clean:
 	@echo "removing:"
@@ -27,3 +27,7 @@ lib:
 
 dialyzer: erl
 	@dialyzer -c ebin
+
+test: erl
+	@$(ERL) -pa $(EBIN_DIRS) -pa ebin -noinput +B \
+	-eval 'case lists:member(error, smak_test:test()) of true -> halt(1); _ -> halt(0) end.'
