@@ -161,7 +161,9 @@ route(Name, Doc, Pat) ->
 route(Name, Doc, Pat, G) ->
     Route = #route{pattern=Pat, name=Name, subs=G, doc=Doc},
     C0 = lists:foldl(fun compile_re/2, #croute{route=Route}, Pat),
-    Exp = lists:reverse(lists:flatten(C0#croute.regex)),
+    Exp0 = lists:reverse(lists:flatten(C0#croute.regex)),
+    % Add anchor markers (otherwise we get false matches)
+    Exp = [["^"|Exp0]|"$"],
     {ok, Exp1} = re:compile(Exp),
     C0#croute{regex=Exp1}.
 
