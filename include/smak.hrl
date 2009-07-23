@@ -2,7 +2,7 @@
 -define(_SMAK_HRL, 1).
 
 %% Include EWGI only once
--include("ewgi.hrl").
+-include_lib("ewgi/include/ewgi.hrl").
 
 %% @type property() = atom() | tuple()
 -type(property() :: atom() | tuple()).
