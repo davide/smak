@@ -38,13 +38,7 @@ foldr(Ctx0, L) when is_record(Ctx0, ewgi_context), is_list(L) ->
 process(F, Ctx) when is_record(Ctx, ewgi_context), ?IS_EWGI_APPLICATION(F) ->
     case ewgi_api:response_error(Ctx) of
         undefined ->
-            try
-                F(Ctx)
-            catch
-                _:Err ->
-                    ?CTX_LOG(Ctx, error, "Internal server error: ~p~nTrace: ~p", [Err, erlang:get_stacktrace()]),
-                    smak_http_response:internal_server_error([], [], [])
-            end;
+	    F(Ctx);
         _ ->
             Ctx
     end.
