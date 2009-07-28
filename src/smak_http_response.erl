@@ -30,11 +30,11 @@
           headers=[] :: ewgi_header_list()
          }).
 
--spec init(#ewgi_context{}, iolist()) -> #ewgi_context{}.
+-spec init(ewgi_context(), iolist()) -> ewgi_context().
 init(Ctx, Content) ->
     init(Ctx, Content, []).
 
--spec init(#ewgi_context{}, iolist(), init_params()) -> #ewgi_context{}.
+-spec init(ewgi_context(), iolist(), init_params()) -> ewgi_context().
 init(Ctx, Content, Params0) ->
     Params = parse(Params0),
     Ctx1 = ewgi_api:response_message_body(Content, Ctx),
@@ -42,7 +42,7 @@ init(Ctx, Content, Params0) ->
     Ctx3 = merge_headers(Params#p.headers, Ctx2),
     add_content_type(Params, Ctx3).
 
--spec add_content_type(#p{}, #ewgi_context{}) -> #ewgi_context{}.
+-spec add_content_type(#p{}, ewgi_context()) -> ewgi_context().
 add_content_type(#p{content_type=undefined}, Ctx) ->
     Hdr0 = ewgi_api:response_headers(Ctx),
     case proplists:get_value("content-type", Hdr0) of
@@ -57,7 +57,7 @@ add_content_type(#p{content_type=V}, Ctx) ->
     Hdr = [{"content-type", V}|proplists:delete("content-type", Hdr0)],
     ewgi_api:response_headers(Hdr, Ctx).
 
--spec merge_headers(ewgi_header_list(), #ewgi_context{}) -> #ewgi_context{}.
+-spec merge_headers(ewgi_header_list(), ewgi_context()) -> ewgi_context.
 merge_headers(L, Ctx) ->
     Hdr0 = ewgi_api:response_headers(Ctx),
     Hdr = lists:foldl(fun({H, V}=A, Headers) ->

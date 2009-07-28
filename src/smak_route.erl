@@ -193,8 +193,8 @@ rename(L) when is_list(L) ->
 %% @doc Resolve a particular URL using the routing tree.  Simply
 %% returns the match result for dispatching.
 -type mresult() :: 'nomatch' | {route_name(), route_pmatches()}.
--spec resolve(gb_tree() | #ewgi_context{}, string()) -> mresult().
-resolve(Ctx, Url) when is_record(Ctx, ewgi_context) ->
+-spec resolve(gb_tree() | ewgi_context(), string()) -> mresult().
+resolve(Ctx, Url) when ?IS_EWGI_CONTEXT(Ctx) ->
     Routes = ewgi_api:find_data(?ROUTE_TREE_KEY, Ctx, gb_trees:empty()),
     resolve(Routes, Url);
 resolve(T, Url) ->
@@ -238,9 +238,9 @@ resolve_default(Orig, _) ->
 %% @doc Naive reverse matching.  Ignores type of incoming data against
 %% pattern.  Returns a url that fits the match specified.  If reverse
 %% isn't possible, returns 'nomatch'.
--spec reverse(gb_tree() | #ewgi_context{},
+-spec reverse(gb_tree() | ewgi_context(),
               {route_name(), route_pmatches()}) -> string() | 'nomatch'.
-reverse(Ctx, M) when is_record(Ctx, ewgi_context) ->
+reverse(Ctx, M) when ?IS_EWGI_CONTEXT(Ctx) ->
     Routes = ewgi_api:find_data(?ROUTE_TREE_KEY, Ctx, gb_trees:empty()),
     reverse(Routes, M);
 reverse(T, {N, L}) ->

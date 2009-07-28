@@ -18,7 +18,7 @@
 
 -include("smak.hrl").
 
--type dispatch_app() :: fun((#ewgi_context{}, route_pmatches()) -> #ewgi_context{}).
+-type dispatch_app() :: fun((ewgi_context(), route_pmatches()) -> ewgi_context()).
 %% @type dispatch_app() = function()
 
 %% @spec pattern(DispatchFun::function(),

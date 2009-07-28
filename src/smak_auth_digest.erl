@@ -72,7 +72,7 @@ init(Application, Realm, AuthFunc, NonceGet, NonceSet) ->
         end,
     F.
 
--spec authenticate(#ewgi_context{}, #conf{}) -> string() | ewgi_app().
+-spec authenticate(ewgi_context(), #conf{}) -> string() | ewgi_app().
 authenticate(Ctx0, Conf) ->
     Method = ewgi_api:request_method(Ctx0),
     Fullpath = ewgi_api:script_name(Ctx0) ++ ewgi_api:path_info(Ctx0),

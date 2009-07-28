@@ -19,23 +19,23 @@
 %% @doc Fold over middleware components L, processing each one with
 %% process/2.
 %% @see foldr/2
--spec foldl(#ewgi_context{}, [ewgi_app()]) -> #ewgi_context{}.
-foldl(Ctx0, L) when is_record(Ctx0, ewgi_context), is_list(L) ->
+-spec foldl(ewgi_context(), [ewgi_app()]) -> ewgi_context().
+foldl(Ctx0, L) when ?IS_EWGI_CONTEXT(Ctx0), is_list(L) ->
     lists:foldl(fun process/2, Ctx0, L).
 
 %% @spec foldr(Ctx::ewgi_context(), L::[ewgi_app()]) -> ewgi_context()
 %% @doc Same as foldl/2 but in the opposite direction.
 %% @see foldl/2
--spec foldr(#ewgi_context{}, [ewgi_app()]) -> #ewgi_context{}.
-foldr(Ctx0, L) when is_record(Ctx0, ewgi_context), is_list(L) ->
+-spec foldr(ewgi_context(), [ewgi_app()]) -> ewgi_context().
+foldr(Ctx0, L) when ?IS_EWGI_CONTEXT(Ctx0), is_list(L) ->
     lists:foldr(fun process/2, Ctx0, L).
 
 %% @spec process(F::ewgi_app(), Ctx::ewgi_context()) -> ewgi_context()
 %% @doc If the context contains no errors, processes a middleware
 %% component.  If the middleware generates an error, it is optionally
 %% logged and an error is returned.
--spec process(ewgi_app(), #ewgi_context{}) -> #ewgi_context{}.
-process(F, Ctx) when is_record(Ctx, ewgi_context), ?IS_EWGI_APPLICATION(F) ->
+-spec process(ewgi_app(), ewgi_context()) -> ewgi_context().
+process(F, Ctx) when ?IS_EWGI_CONTEXT(Ctx), ?IS_EWGI_APPLICATION(F) ->
     case ewgi_api:response_error(Ctx) of
         undefined ->
 	    F(Ctx);

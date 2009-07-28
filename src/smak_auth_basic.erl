@@ -47,7 +47,7 @@ init(Application, Realm, AuthFunc) when ?IS_EWGI_APPLICATION(Application),
 %% Tests the environment for authorization and either returns the
 %% authenticated username or an ewgi application which gives an
 %% "Unauthorized" response.
--spec authenticate(#ewgi_context{}, string(), function()) -> ewgi_app() | string().
+-spec authenticate(ewgi_context(), string(), function()) -> ewgi_app() | string().
 authenticate(Ctx0, Realm, AuthFunc) ->
     case ewgi_api:get_header_value("authorization", Ctx0) of
         Authorization when is_list(Authorization) ->
@@ -68,7 +68,7 @@ authenticate(Ctx0, Realm, AuthFunc) ->
     end.
 
 %% Prompts for basic authentication giving a 401 Unauthorized response.
--spec unauthorized(#ewgi_context{}, Realm::string()) -> ewgi_app().
+-spec unauthorized(ewgi_context(), Realm::string()) -> ewgi_app().
 unauthorized(_Ctx0, Realm) ->
     H = [{"WWW-Authenticate", ["Basic realm=\"", Realm, "\""]}],
     smak_http_status:unauthorized([], H, []).

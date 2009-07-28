@@ -74,7 +74,7 @@ header_app(Methods) ->
         end,
     F.
 
--spec header_app1(methods(), #ewgi_context{}) -> #ewgi_context{}.
+-spec header_app1(methods(), ewgi_context()) -> ewgi_context().
 header_app1(Methods, Ctx0) ->
     case ewgi_api:get_header_value("x-http-method-override", Ctx0) of
         undefined ->
@@ -101,7 +101,7 @@ qs_app(Methods, Key) ->
         end,
     F.
 
--spec qs_app1(methods(), string(), #ewgi_context{}) -> #ewgi_context{}.
+-spec qs_app1(methods(), string(), ewgi_context()) -> ewgi_context().
 qs_app1(Methods, Key, Ctx0) ->
     case ewgi_api:query_string(Ctx0) of
         undefined ->

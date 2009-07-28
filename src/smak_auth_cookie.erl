@@ -50,19 +50,19 @@ init(Application, Key, Options) when is_binary(Key), size(Key) >= 16 ->
             {error, invalid_parameters}
     end.
 
--spec handle_request(#ewgi_context{}, #cka{}) -> #ewgi_context{}.
+-spec handle_request(ewgi_context(), #cka{}) -> ewgi_context().
 handle_request(Ctx0, Cka) ->
     Ctx = decode_cookies(ewgi_api:get_header_value("cookie", Ctx0), Ctx0, Cka),
     ewgi_application:run(Cka#cka.application, add_funs(Ctx, Cka)).
 
--spec decode_cookies('undefined' | string(), #ewgi_context{}, #cka{}) -> #ewgi_context{}.
+-spec decode_cookies('undefined' | string(), ewgi_context(), #cka{}) -> ewgi_context().
 decode_cookies(undefined, Ctx, _) ->
     Ctx;
 decode_cookies(Cookie, Ctx, Cka) ->
     CookieValues = smak_cookie:parse_cookie(Cookie),
     decode_cookies1(proplists:get_value(Cka#cka.cookie_name, CookieValues), Ctx, Cka).
 
--spec decode_cookies1('undefined' | string(), #ewgi_context{}, #cka{}) -> #ewgi_context{}.
+-spec decode_cookies1('undefined' | string(), ewgi_context(), #cka{}) -> ewgi_context().
 decode_cookies1(undefined, Ctx, _) ->
     Ctx;
 decode_cookies1(Cookie0, Ctx, Cka) ->
@@ -113,13 +113,13 @@ scan_cookie_content(#cka{include_ip=I}) ->
         end,
     F.
 
--spec add_funs(#ewgi_context{}, #cka{}) -> #ewgi_context{}.
+-spec add_funs(ewgi_context(), #cka{}) -> ewgi_context().
 add_funs(Ctx0, Cka) ->
     lists:foldl(fun({K, V}, C) -> ewgi_api:store_data(K, V, C) end,
                 Ctx0, [{?SET_USER_ENV_NAME, set_user(Ctx0, Cka)},
                        {?LOGOUT_USER_ENV_NAME, logout_user(Ctx0, Cka)}]).
 
--spec set_user(#ewgi_context{}, #cka{}) -> function().
+-spec set_user(ewgi_context(), #cka{}) -> function().
 set_user(Ctx, #cka{include_ip=IncludeIp,
                    cookie_name=CookieName,
                    encoder=Encoder,
@@ -146,7 +146,7 @@ set_user(Ctx, #cka{include_ip=IncludeIp,
         end,
     F.
 
--spec logout_user(#ewgi_context{}, #cka{}) -> function().
+-spec logout_user(ewgi_context(), #cka{}) -> function().
 logout_user(Ctx, #cka{cookie_name=CookieName}) ->
     F = fun() ->
                 {CurDomain, WildDomain} = get_domains(Ctx),
@@ -174,7 +174,7 @@ simple_cookie(Name, Val, Sec, Domain) ->
     Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
     {"Set-Cookie", io_lib:format("~s=~s; Path=/; Domain=~s~s~s", [Name, Val, Domain, S, Exp])}.
 
--spec get_domains(#ewgi_context{}) -> {string(), string()}.
+-spec get_domains(ewgi_context()) -> {string(), string()}.
 get_domains(Ctx) ->
     Cur = case ewgi_api:get_header_value("host", Ctx) of
               undefined ->

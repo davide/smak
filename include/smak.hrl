@@ -10,12 +10,6 @@
 %% @type proplist() = [property()]
 -type(proplist() :: [property()]).
 
-%% @type iodata() = binary() | iolist()
--type(iodata() :: binary() | iolist()).
-
-%% @type ewgi_response() = iodata() | stream()
--type(ewgi_response() :: iodata() | stream()).
-
 %% @type ewgi_env() = proplist()
 -type(ewgi_env() :: proplist()).
 
