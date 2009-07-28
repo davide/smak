@@ -36,7 +36,7 @@ foldr(Ctx0, L) when is_record(Ctx0, ewgi_context), is_list(L) ->
 %% logged and an error is returned.
 -spec process(ewgi_app(), #ewgi_context{}) -> #ewgi_context{}.
 process(F, Ctx) when is_record(Ctx, ewgi_context), ?IS_EWGI_APPLICATION(F) ->
-    case smak_ewgi:response_error(Ctx) of
+    case ewgi_api:response_error(Ctx) of
         undefined ->
             try
                 F(Ctx)
