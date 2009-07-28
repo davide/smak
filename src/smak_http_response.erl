@@ -15,6 +15,8 @@
 
 -include("smak.hrl").
 
+-include_lib("eunit/include/eunit.hrl").
+
 -type response_key() :: 'status' | 'content_type' | 'headers'.
 -type init_params() :: [{response_key(), string() | ewgi_status()}].
 
@@ -94,6 +96,8 @@ replace_header(Headers, Name, Value) ->
     Name1 = string:to_lower(Name),
     replace_header1(Headers, Name1, Value, [], []).
 
+replace_header1([], Name, Value, [], Acc) ->
+    {[], lists:reverse([{Name, Value}|Acc])};
 replace_header1([], _, _, Prev, Acc) ->
     {Prev, lists:reverse(Acc)};
 replace_header1([{PrevName, PrevValue}|T], Name, Value, [], Acc) ->
@@ -105,3 +109,20 @@ replace_header1([{PrevName, PrevValue}|T], Name, Value, [], Acc) ->
     end;
 replace_header1([H|T], Name, Value, Prev, Acc) ->
     replace_header1(T, Name, Value, Prev, [H|Acc]).
+
+%%----------------------------------------------------------------------
+%% Unit tests
+%%----------------------------------------------------------------------
+
+replace_header_test_() ->
+    [%% Insert if not found
+     ?_assertEqual({[], [{"host", "localhost"}]},
+		   replace_header([], "Host", "localhost")),
+     %% Replace one occurance (and return old value)
+     ?_assertEqual({"localhost", [{"host", "remote"}]},
+		   replace_header([{"host", "localhost"}], "Host", "remote")),
+     %% Replace first of multiple occurances (and return first old value)
+     %% (this function is not suited for this though)
+     ?_assertEqual({"localhost", [{"host", "remote"}, {"host", "www"}]},
+		   replace_header([{"host", "localhost"}, {"host", "www"}], "Host", "remote"))
+    ].
