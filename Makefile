@@ -4,6 +4,7 @@ EBIN_DIRS	:= $(wildcard lib/*/ebin)
 APP		:= smak
 
 all: erl ebin/$(APP).app
+	make -C deps/ewgi all
 
 erl: ebin lib
 	@$(ERL) -pa $(EBIN_DIRS) -pa ebin -noinput +B \
@@ -15,6 +16,7 @@ docs:
 clean:
 	@echo "removing:"
 	@rm -fv ebin/*.beam ebin/*.app
+	make -C deps/ewgi clean
 
 ebin/$(APP).app: src/$(APP).app
 	@cp -v src/$(APP).app $@
