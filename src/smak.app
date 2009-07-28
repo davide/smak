@@ -9,16 +9,23 @@
               ,smak_auth_cookie
               ,smak_auth_digest
               ,smak_calendar
-              ,smak_ewgi
+	      ,smak_dispatch
               ,smak_hex
               ,smak_html_util
+              ,smak_http_response
               ,smak_http_status
+	      ,smak_log
+	      ,smak_log_console
+	      ,smak_log_file
+	      ,smak_media_types
+	      ,smak_method_overload
+	      ,smak_mw
               ,smak_random
-              ,smak_response
-              ,smak_route
-              ,smak_sn_cookie
+	      ,smak_route
+	      ,smak_sn_cookie
               ,smak_streams
               ,smak_string
+	      ,smak_timer
               ,smak_url
              ]}
  ]}.
