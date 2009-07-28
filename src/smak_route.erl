@@ -276,6 +276,11 @@ reverse1([{Name, _}|T], L, Acc) ->
 route_test_() ->
     R0 = route("foo", <<"">>, ["/", {1, "url"}, "/", {bar, "\\w+", "bar"}, "/", {baz, "\\d+", "0"}, "/"], [1, bar, baz]),
     R1 = route("baz", <<"">>, ["/", {1, "static"}, "/"], []),
-    Routes = routes([R0, R1]),
+    R2 = route("root", <<"">>, ["/"], []),
+    Routes = routes([R0, R1, R2]),
     Url = "/url/test/100/",
-    [?_assertEqual(Url, reverse(Routes, resolve(Routes, Url)))].
+    [?_assertEqual(Url, reverse(Routes, resolve(Routes, Url))),
+     %% Anchoring
+     ?_assertEqual({"root", []}, resolve(Routes, "/")),
+     ?_assertEqual(nomatch, resolve(Routes, "/hello"))
+    ].
