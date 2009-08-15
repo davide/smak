@@ -21,7 +21,7 @@
 -author('Hunter Morris <hunter.morris@smarkets.com>').
 
 -define(MAX_SIZE, 4096). %% Most browsers only allow 4K of cookies
--define(MAX_SIZE_REPR, 2048). %% Assume a 2-character representation of each byte in the final cookie.
+-define(MAX_SIZE_REPR, ?MAX_SIZE/2). %% Assume a 2-character representation of each byte in the final cookie.
 
 -export([encode/2, encode/3, decode/3]).
 
