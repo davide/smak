@@ -35,7 +35,7 @@ encode(Key, Data) ->
 %% @spec encode(Key::binary(), Data::binary(), MaxSize::integer()) -> binary() | {error, Reason::atom()}
 %% @doc Encodes and signs the data using the specified secret key and provides an error if it exceeds the maximum size.
 -spec encode(binary(), binary(), integer()) -> binary() | {error, atom()}.
-encode(Key, Data, MaxSize) when MaxSize > 0, is_binary(Data), is_binary(Key) ->
+encode(<<Key:16/binary>>, Data, MaxSize) when MaxSize > 0, is_binary(Data) ->
     IV = crypto:rand_bytes(16),
     DataCompressed = zlib:zip(Data),
     DataCrypted = crypto:aes_cfb_128_encrypt(Key, IV, DataCompressed),
@@ -52,7 +52,7 @@ encode(Key, Data, MaxSize) when MaxSize > 0, is_binary(Data), is_binary(Key) ->
 %% @spec decode(Key::binary(), Cookie::binary(), Timeout::integer()) -> binary() | {error, Reason::atom()}
 %% @doc Checks the signature and timeout and decrypts the cookie if it is valid.
 -spec decode(binary(), binary(), integer()) -> binary() | {error, atom()}.
-decode(Key, <<HMACSignature:20/binary, Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>, Timeout) ->
+decode(<<Key:16/binary>>, <<HMACSignature:20/binary, Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>, Timeout) ->
     MinimumAge = smak_calendar:now_utc_ts_ms() - Timeout,
     case crypto:sha_mac(Key, <<Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>) of
         HMACSignature ->
@@ -67,5 +67,5 @@ decode(Key, <<HMACSignature:20/binary, Timestamp:48/integer, IV:16/binary, DataC
         _ ->
             {error, cookie_tampered}
     end;
-decode(_, _, _) ->
+decode(<<_:16/binary>>, _, _) ->
     {error, invalid_cookie}.
