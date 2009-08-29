@@ -47,7 +47,9 @@ encode(<<Key:16/binary>>, Data, MaxSize) when MaxSize > 0, is_binary(Data) ->
             {error, session_too_large};
         _ ->
             Result
-    end.
+    end;
+encode(_Key, _, _) ->
+    {error, invalid_key}.
     
 %% @spec decode(Key::binary(), Cookie::binary(), Timeout::integer()) -> binary() | {error, Reason::atom()}
 %% @doc Checks the signature and timeout and decrypts the cookie if it is valid.
@@ -67,5 +69,5 @@ decode(<<Key:16/binary>>, <<HMACSignature:20/binary, Timestamp:48/integer, IV:16
         _ ->
             {error, cookie_tampered}
     end;
-decode(<<_:16/binary>>, _, _) ->
-    {error, invalid_cookie}.
+decode(_Key, _, _) ->
+    {error, invalid_key}.
