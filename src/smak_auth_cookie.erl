@@ -219,20 +219,22 @@ cookie_safe_decode1([C|Rest], Acc) ->
 
 -spec populate_record(proplist(), #cka{}) -> #cka{} | {'error', {'invalid_option', any()}}.
 populate_record(Options, Cka) ->
-    lists:foldr(fun r_option/2, Cka, Options).
+    lists:foldl(fun r_option/2, Cka, Options).
 
 -spec r_option({atom(), any()}, #cka{}) -> #cka{} | {'error', {'invalid_option', any()}}.
-r_option({cookie_name, N}, Cka) when is_list(N), is_record(Cka, cka) ->
+r_option(_, PrevError) when not is_record(PrevError, cka) ->
+	PrevError;
+r_option({cookie_name, N}, Cka) when is_list(N) ->
     Cka#cka{cookie_name=N};
-r_option({encoder, E}, Cka) when is_record(Cka, cka) ->
+r_option({encoder, E}, Cka) ->
     Cka#cka{encoder=E};
-r_option({include_ip, true}, Cka) when is_record(Cka, cka) ->
-    Cka#cka{include_ip=true};
-r_option({timeout, T}, Cka) when is_integer(T), is_record(Cka, cka) ->
+r_option({include_ip, IncludeIp}, Cka) when is_boolean(IncludeIp) ->
+    Cka#cka{include_ip=IncludeIp};
+r_option({timeout, T}, Cka) when is_integer(T) ->
     Cka#cka{timeout=T};
-r_option({maxlength, M}, Cka) when is_integer(M), M > 0, is_record(Cka, cka) ->
+r_option({maxlength, M}, Cka) when is_integer(M), M > 0 ->
     Cka#cka{maxlength=M};
-r_option({secure, true}, Cka) when is_record(Cka, cka) ->
-    Cka#cka{secure=true};
+r_option({secure, Secure}, Cka) when is_boolean(Secure) ->
+    Cka#cka{secure=Secure};
 r_option(O, _Cka) ->
     {error, {invalid_option, O}}.
