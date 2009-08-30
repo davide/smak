@@ -95,7 +95,10 @@ decode_cookies1(Cookie0, Ctx, Cka) ->
 
 -spec scan_cookie_content(#cka{}) -> function().
 scan_cookie_content(#cka{include_ip=I}) ->
-    F = fun({"REMOTE_USER", U}, Ctx) ->
+    F = fun
+		   (_, PrevError) when not ?IS_EWGI_CONTEXT(PrevError) ->
+			PrevError;
+		   ({"REMOTE_USER", U}, Ctx) ->
                 ewgi_api:remote_user(U, Ctx);
            ({"REMOTE_USER_DATA", D}, Ctx) ->
                 ewgi_api:remote_user_data(D, Ctx);
