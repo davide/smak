@@ -14,6 +14,8 @@
 
 -include("smak.hrl").
 
+-import(smak_cookie, [simple_cookie/3, simple_cookie/4, cookie_safe_encode/1, cookie_safe_decode/1, get_domains/1]).
+
 -compile(export_all).
 
 -define(DEFAULT_COOKIE_NAME, "smak_auth").
@@ -21,7 +23,6 @@
 -define(SET_USER_ENV_NAME, "smak.auth_cookie.set_user").
 -define(LOGOUT_USER_ENV_NAME, "smak.auth_cookie.logout_user").
 -define(DEFAULT_IP, "0.0.0.0").
--define(COOKIE_DELETE_TRAILER, "; Expires=Thu, 01 Jan 1970 23:00:00 GMT; Max-Age=0").
 
 -record(cka, {
           application = undefined,
@@ -158,67 +159,6 @@ logout_user(Ctx, #cka{cookie_name=CookieName}) ->
                  simple_cookie(CookieName, [], false, WildDomain)]
         end,
     F.
-
--spec simple_cookie(string(), string() | binary(), bool()) -> {string(), iolist()}.
-simple_cookie(Name, Val, Sec) when is_binary(Val) ->
-    simple_cookie(Name, binary_to_list(Val), Sec);
-simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
-    S = if Sec -> "; Secure"; true -> [] end,
-    Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
-    {"Set-Cookie", [Name, $=, Val, "; Path=/", S, Exp]}.
-
--spec simple_cookie(string(), binary() | string(), bool(), binary() | string()) -> {string(), iolist()}.
-simple_cookie(Name, Val, Sec, Domain) when is_binary(Val) ->
-    simple_cookie(Name, binary_to_list(Val), Sec, Domain);
-simple_cookie(Name, Val, Sec, Domain) when is_binary(Domain) ->
-    simple_cookie(Name, Val, Sec, binary_to_list(Domain));
-simple_cookie(Name, Val, Sec, Domain) ->
-    S = if Sec -> "; Secure"; true -> [] end,
-    Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
-    {"Set-Cookie", io_lib:format("~s=~s; Path=/; Domain=~s~s~s", [Name, Val, Domain, S, Exp])}.
-
--spec get_domains(ewgi_context()) -> {string(), string()}.
-get_domains(Ctx) ->
-    Cur = case ewgi_api:get_header_value("host", Ctx) of
-              undefined ->
-                  ewgi_api:server_name(Ctx);
-              H ->
-                  H
-          end,
-    Wild = [$.|Cur],
-    {Cur, Wild}.
-
--spec cookie_safe_encode(binary()) -> binary().
-cookie_safe_encode(Bin) when is_binary(Bin) ->
-    Enc = binary_to_list(base64:encode(Bin)),
-    list_to_binary(cookie_safe_encode1(Enc, [])).
-
--spec cookie_safe_encode1(string(), string()) -> string().
-cookie_safe_encode1([], Acc) ->
-    lists:reverse(Acc);
-cookie_safe_encode1([$=|Rest], Acc) ->
-    cookie_safe_encode1(Rest, [$~|Acc]);
-cookie_safe_encode1([$/|Rest], Acc) ->
-    cookie_safe_encode1(Rest, [$_|Acc]);
-cookie_safe_encode1([C|Rest], Acc) ->
-    cookie_safe_encode1(Rest, [C|Acc]).
-
--spec cookie_safe_decode(binary() | list()) -> binary().
-cookie_safe_decode(Bin) when is_binary(Bin) ->
-    cookie_safe_decode(binary_to_list(Bin));
-cookie_safe_decode(L) when is_list(L) ->
-    Dec = cookie_safe_decode1(L, []),
-    base64:decode(Dec).
-
--spec cookie_safe_decode1(string(), list()) -> list().
-cookie_safe_decode1([], Acc) ->
-    lists:reverse(Acc);
-cookie_safe_decode1([$~|Rest], Acc) ->
-    cookie_safe_decode1(Rest, [$=|Acc]);
-cookie_safe_decode1([$_|Rest], Acc) ->
-    cookie_safe_decode1(Rest, [$/|Acc]);
-cookie_safe_decode1([C|Rest], Acc) ->
-    cookie_safe_decode1(Rest, [C|Acc]).
 
 -spec populate_record(proplist(), #cka{}) -> #cka{} | {'error', {'invalid_option', any()}}.
 populate_record(Options, Cka) ->

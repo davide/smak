@@ -1,10 +1,15 @@
 %% @author Emad El-Haraty <emad@mochimedia.com>
 %% @copyright 2007 Mochi Media, Inc.
 
-%% @doc HTTP Cookie parsing (RFC 2109, RFC 2965) shamelessly ripped off mochiweb.
+%% @doc HTTP Cookie parsing (RFC 2109, RFC 2965)
+%% - parse_cookie/1 shamelessly ripped off mochiweb.
+%% - simple_cookie/[3,4] moved off smak_auth_cookie.
 
 -module(smak_cookie).
 -export([parse_cookie/1, test/0]).
+-export([cookie_headers/4, cookie_safe_encode/1, cookie_safe_decode/1, get_domains/1]).
+
+-include("smak.hrl").
 
 -define(QUOTE, $\").
 
@@ -20,6 +25,8 @@
          C =:= $\\ orelse C =:= $\" orelse C =:= $/ orelse
          C =:= $[ orelse C =:= $] orelse C =:= $? orelse C =:= $= orelse
          C =:= ${ orelse C =:= $})).
+
+-define(COOKIE_DELETE_TRAILER, "; Expires=Thu, 01 Jan 1970 23:00:00 GMT; Max-Age=0").
 
 %% @spec parse_cookie(string()) -> [{K::string(), V::string()}]
 %% @doc Parse the contents of a Cookie header field, ignoring cookie
@@ -113,3 +120,86 @@ parse_cookie_test() ->
     [{"foo", ""}, {"bar", ""}] = parse_cookie("foo=;bar="),
     [{"foo", "\";"}, {"bar", ""}] = parse_cookie("foo = \"\\\";\";bar "),
     [{"foo", "\";bar"}] = parse_cookie("foo=\"\\\";bar").
+
+
+%%====================================================================
+%% Functions for setting the cookie headers in the ewgi_response()
+%%====================================================================
+cookie_headers(Ctx, CookieName, CookieVal, Sec) ->
+    {CurDomain, WildDomain} = get_domains(Ctx),
+    SessionHeaders =
+	[simple_cookie(CookieName, CookieVal, Sec),
+	 simple_cookie(CookieName, CookieVal, Sec, CurDomain),
+	 simple_cookie(CookieName, CookieVal, Sec, WildDomain)],
+    OldHeaders = ewgi_api:response_headers(Ctx),
+    Headers = SessionHeaders ++ remove_cookie_headers(CookieName, OldHeaders, []),
+    ewgi_api:response_headers(Headers, Ctx).
+
+-spec get_domains(ewgi_context()) -> {string(), string()}.
+get_domains(Ctx) ->
+    Cur = case ewgi_api:get_header_value("host", Ctx) of
+              undefined ->
+                  ewgi_api:server_name(Ctx);
+              H ->
+                  H
+          end,
+    Wild = [$.|Cur],
+    {Cur, Wild}.
+
+remove_cookie_headers(_, [], Acc) ->
+    Acc;
+remove_cookie_headers(CookieName, [{"Set-Cookie", [CookieName|_]}|R], Acc) ->
+    remove_cookie_headers(CookieName, R, Acc);
+remove_cookie_headers(CookieName, [H|R], Acc) ->
+    remove_cookie_headers(CookieName, R, [H|Acc]).
+
+-spec simple_cookie(string(), string() | binary(), bool()) -> {string(), iolist()}.
+simple_cookie(Name, Val, Sec) when is_binary(Val) ->
+    simple_cookie(Name, binary_to_list(Val), Sec);
+simple_cookie(Name, Val, Sec) when is_list(Name), is_list(Val) ->
+    S = if Sec -> "; Secure"; true -> [] end,
+    Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
+    {"Set-Cookie", [Name, $=, Val, "; Path=/", S, Exp]}.
+
+-spec simple_cookie(string(), binary() | string(), bool(), binary() | string()) -> {string(), iolist()}.
+simple_cookie(Name, Val, Sec, Domain) when is_binary(Val) ->
+    simple_cookie(Name, binary_to_list(Val), Sec, Domain);
+simple_cookie(Name, Val, Sec, Domain) when is_binary(Domain) ->
+    simple_cookie(Name, Val, Sec, binary_to_list(Domain));
+simple_cookie(Name, Val, Sec, Domain) ->
+    S = if Sec -> "; Secure"; true -> [] end,
+    Exp = case Val of [] -> ?COOKIE_DELETE_TRAILER; _ -> [] end,
+    {"Set-Cookie", io_lib:format("~s=~s; Path=/; Domain=~s~s~s", [Name, Val, Domain, S, Exp])}.
+
+
+-spec cookie_safe_encode(binary()) -> binary().
+cookie_safe_encode(Bin) when is_binary(Bin) ->
+    Enc = binary_to_list(base64:encode(Bin)),
+    list_to_binary(cookie_safe_encode1(Enc, [])).
+
+-spec cookie_safe_encode1(string(), string()) -> string().
+cookie_safe_encode1([], Acc) ->
+    lists:reverse(Acc);
+cookie_safe_encode1([$=|Rest], Acc) ->
+    cookie_safe_encode1(Rest, [$~|Acc]);
+cookie_safe_encode1([$/|Rest], Acc) ->
+    cookie_safe_encode1(Rest, [$_|Acc]);
+cookie_safe_encode1([C|Rest], Acc) ->
+    cookie_safe_encode1(Rest, [C|Acc]).
+
+-spec cookie_safe_decode(binary() | list()) -> binary().
+cookie_safe_decode(Bin) when is_binary(Bin) ->
+    cookie_safe_decode(binary_to_list(Bin));
+cookie_safe_decode(L) when is_list(L) ->
+    Dec = cookie_safe_decode1(L, []),
+    base64:decode(Dec).
+
+-spec cookie_safe_decode1(string(), list()) -> list().
+cookie_safe_decode1([], Acc) ->
+    lists:reverse(Acc);
+cookie_safe_decode1([$~|Rest], Acc) ->
+    cookie_safe_decode1(Rest, [$=|Acc]);
+cookie_safe_decode1([$_|Rest], Acc) ->
+    cookie_safe_decode1(Rest, [$/|Acc]);
+cookie_safe_decode1([C|Rest], Acc) ->
+    cookie_safe_decode1(Rest, [C|Acc]).
