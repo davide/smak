@@ -14,7 +14,7 @@
 
 -include("smak.hrl").
 
--import(smak_cookie, [simple_cookie/3, simple_cookie/4, cookie_safe_encode/1, cookie_safe_decode/1, get_domains/1]).
+-import(ewgi_util_cookie, [simple_cookie/3, simple_cookie/4, cookie_safe_encode/1, cookie_safe_decode/1, get_domains/1]).
 
 -compile(export_all).
 
@@ -60,7 +60,7 @@ handle_request(Ctx0, Cka) ->
 decode_cookies(undefined, Ctx, _) ->
     Ctx;
 decode_cookies(Cookie, Ctx, Cka) ->
-    CookieValues = smak_cookie:parse_cookie(Cookie),
+    CookieValues = ewgi_util_cookie:parse_cookie(Cookie),
     decode_cookies1(proplists:get_value(Cka#cka.cookie_name, CookieValues), Ctx, Cka).
 
 -spec decode_cookies1('undefined' | string(), ewgi_context(), #cka{}) -> ewgi_context().
