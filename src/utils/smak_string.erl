@@ -105,7 +105,7 @@ split_substring([C|S], Seps, N, Toks, Cs) ->
 split_substring([], _Seps, _N, Toks, Cs) ->
     lists:reverse([lists:reverse(Cs)|Toks]).
 
--spec(prefix/2 :: (string(), string()) -> bool()).
+-spec(prefix/2 :: (string(), string()) -> boolean()).
              
 prefix([C|Pre], [C|String]) ->
     prefix(Pre, String);
@@ -196,9 +196,9 @@ strip_right([Ch|S], StripChars) ->
 strip_right([], _StripChars) ->
     [].
 
-%% @spec is_whitespace(char()) -> bool()
+%% @spec is_whitespace(char()) -> boolean()
 %% @doc Tests if a character is whitespace.
--spec(is_whitespace/1 :: (char()) -> bool()).
+-spec(is_whitespace/1 :: (char()) -> boolean()).
 
 is_whitespace(Ch) when ?IS_WHITESPACE_GUARD(Ch) ->
     true;

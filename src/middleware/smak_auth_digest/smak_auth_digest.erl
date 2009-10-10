@@ -185,7 +185,7 @@ assert_valid_authpath(A, F) ->
 unauthorized(Conf) ->
     unauthorized(false, Conf).
 
--spec unauthorized(bool(), #conf{}) -> ewgi_app().
+-spec unauthorized(boolean(), #conf{}) -> ewgi_app().
 unauthorized(Stale, Conf) ->
     {NowDt, NowMs} = ewgi_util_calendar:now_utc_ms(),
     Now = ewgi_util_calendar:now_to_unix_ts(NowDt, NowMs),
@@ -198,12 +198,12 @@ unauthorized(Stale, Conf) ->
     H = [{"WWW-Authenticate", BR}],
     smak_http_status:unauthorized([], H, []).
 
--spec get_digest_head(string(), string(), bool(), #conf{}) -> string().
+-spec get_digest_head(string(), string(), boolean(), #conf{}) -> string().
 get_digest_head(Nonce, Opaque, Stale, Conf) ->
     Pairs = lists:map(fun hpair/1, get_digest_head_list({Nonce, Opaque}, Stale, Conf)),
     string:join(Pairs, ", ").
 
--spec get_digest_head_list({string(), string()}, bool(), #conf{}) -> [{string(), string()}].
+-spec get_digest_head_list({string(), string()}, boolean(), #conf{}) -> [{string(), string()}].
 get_digest_head_list(A, true, Conf) ->
     [{"stale", "true"}|get_digest_head_list(A, false, Conf)];
 get_digest_head_list({Nonce, Opaque}, false, Conf) ->

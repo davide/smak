@@ -48,7 +48,7 @@ log_event(Name) ->
         end,
     F.
 
--spec level_compare(log_level(), log_level()) -> bool().
+-spec level_compare(log_level(), log_level()) -> boolean().
 level_compare(error, error) ->
     true;
 level_compare(error, info) ->

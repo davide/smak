@@ -30,8 +30,8 @@
 -type mo_option() :: 'disable_header' | 'disable_qs' | {'methods_allowed', methods()} | {'qs_key', string()}.
 
 -record(mo_options, {
-          disable_header = false :: bool(),
-          disable_qs     = false :: bool(),
+          disable_header = false :: boolean(),
+          disable_qs     = false :: boolean(),
           methods_allowed = default :: 'default' | methods(),
           qs_key = "_method" :: string()
          }).

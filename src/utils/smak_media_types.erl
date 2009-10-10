@@ -649,11 +649,11 @@ description(#media_type{description=V}) ->
 description(V, M) ->
     M#media_type{description=V}.
 
-%% @spec includes(Left::media_type(), Right::media_type()) -> bool()
+%% @spec includes(Left::media_type(), Right::media_type()) -> boolean()
 %% @doc Returns whether or not a given media type is included in the
 %% current one. It is true if both types are equal or if the right
 %% media type is within the left one.
--spec includes(#media_type{}, #media_type{}) -> bool().
+-spec includes(#media_type{}, #media_type{}) -> boolean().
 includes(?_ALL, _) ->
     true;
 includes(L, R) ->
@@ -664,7 +664,7 @@ includes(L, R) ->
             includes(main_type(L), sub_type(L), main_type(R), sub_type(R))
     end.
 
--spec includes(string(), string(), string(), string()) -> bool().
+-spec includes(string(), string(), string(), string()) -> boolean().
 includes(LMain, LSub, LMain, LSub) ->
     true;
 includes(LMain, "*", LMain, _) ->
@@ -676,7 +676,7 @@ includes(LMain, "*+" ++ LSub, LMain, RSub) ->
 includes(_, _, _, _) ->
     false.
 
--spec includes1(string(), string()) -> bool().
+-spec includes1(string(), string()) -> boolean().
 includes1([], _) ->
     true;
 includes1([H|L], [H|R]) ->
@@ -684,18 +684,18 @@ includes1([H|L], [H|R]) ->
 includes1(_, _) ->
     false.
 
-%% @spec equals(Left::media_type(), Right::media_type()) -> bool()
+%% @spec equals(Left::media_type(), Right::media_type()) -> boolean()
 %% @equiv equals(L, R, false)
--spec equals(#media_type{}, #media_type{}) -> bool().
+-spec equals(#media_type{}, #media_type{}) -> boolean().
 equals(L, R) ->
     equals(L, R, false).
 
 %% @spec equals(Left::media_type(),
 %%              Right::media_type(),
-%%              IgnoreParams::bool()) -> bool()
+%%              IgnoreParams::boolean()) -> boolean()
 %% @doc Returns whether or not two media types are equal.  If
 %% IgnoreParams is false, checks parameters for equality.
--spec equals(#media_type{}, #media_type{}, bool()) -> bool().
+-spec equals(#media_type{}, #media_type{}, boolean()) -> boolean().
 equals(L, L, _) when is_record(L, media_type) ->
     true;
 equals(#media_type{mime=LMime, description=LDesc},
@@ -707,9 +707,9 @@ equals(_, _, true) ->
 equals(#media_type{parameters=L}, #media_type{parameters=R}, false) ->
     lists:sort(L) =:= lists:sort(R).
 
-%% @spec is_compatible(Left::media_type(), Right::media_type()) -> bool()
+%% @spec is_compatible(Left::media_type(), Right::media_type()) -> boolean()
 %% @doc Checks if two media types are compatible
--spec is_compatible(#media_type{}, #media_type{}) -> bool().
+-spec is_compatible(#media_type{}, #media_type{}) -> boolean().
 is_compatible(L, R) ->
     case includes(L, R) of
         true ->
@@ -718,10 +718,10 @@ is_compatible(L, R) ->
             includes(R, L)
     end.
 
-%% @spec is_concrete(Type::media_type()) -> bool()
+%% @spec is_concrete(Type::media_type()) -> boolean()
 %% @doc Checks if a media type is concrete (i.e. does not include a
 %% wildcard)
--spec is_concrete(#media_type{}) -> bool().
+-spec is_concrete(#media_type{}) -> boolean().
 is_concrete(#media_type{mime=M}) ->
     string:chr(M, $*) =:= 0.
 

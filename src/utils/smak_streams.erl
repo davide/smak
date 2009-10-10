@@ -163,7 +163,7 @@ first(N, S) when is_integer(N), N > 0, is_function(S, 0) ->
 %% @spec takewhile(function(), stream()) -> stream()
 %% @doc Accumulates elements from a stream while the unary predicate is
 %% true. It forces each of the elements of the stream it must test.
--spec takewhile(fun((any()) -> bool()), stream()) -> stream().
+-spec takewhile(fun((any()) -> boolean()), stream()) -> stream().
 
 takewhile(P, S) when is_function(P, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -195,7 +195,7 @@ drop(N, S) when is_integer(N), N > 0, is_function(S, 0) ->
 %% @spec dropwhile(function(), stream()) -> stream()
 %% @doc Drops elements from a stream while the unary predicate is true. It
 %% forces each of the elements of the stream it must test.
--spec dropwhile(fun((any()) -> bool()), stream()) -> stream().
+-spec dropwhile(fun((any()) -> boolean()), stream()) -> stream().
 
 dropwhile(P, S) when is_function(P, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -233,7 +233,7 @@ map(F, S) when is_function(F, 1), is_function(S, 0) ->
 %% @doc The stream of all elements E in S (in the same order) for which P(E)
 %% returns `true'. P must return either `true' or `false' for all elements in
 %% S.
--spec filter(fun((any()) -> bool()), stream()) -> stream().
+-spec filter(fun((any()) -> boolean()), stream()) -> stream().
 
 filter(P, S) when is_function(P, 1), is_function(S, 0) ->
     ?DELAY(case ?FORCE(S) of
@@ -254,7 +254,7 @@ filter(P, S) when is_function(P, 1), is_function(S, 0) ->
 %% ordered before the first possible X of S1 such that P(X, Y) yields
 %% `false'. P(X, Y) must yield either `true' or `false' for all X in S1 and Y
 %% in S2. (P can be read as "less than".)
--spec merge(fun((any(), any()) -> bool()), stream(), stream()) -> stream().
+-spec merge(fun((any(), any()) -> boolean()), stream(), stream()) -> stream().
 
 merge(P, S1, S2) when is_function(P, 2), is_function(S1, 0), is_function(S2, 0) ->
     ?DELAY(case ?FORCE(S1) of
@@ -276,9 +276,9 @@ merge(P, S1, S2) when is_function(P, 2), is_function(S1, 0), is_function(S2, 0) 
 
 %% NOTE: These functions below may force all or part of their input.
 
-%% @spec member(any(), stream()) -> bool()
+%% @spec member(any(), stream()) -> boolean()
 %% @doc Returns `true' if X is in the stream S, and `false' otherwise.
--spec member(any(), stream()) -> bool().
+-spec member(any(), stream()) -> boolean().
 
 member(X, S) when is_function(S, 0) ->
     case ?FORCE(S) of

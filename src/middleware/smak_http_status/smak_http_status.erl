@@ -255,9 +255,9 @@ http_redir(#status{code=Code, title=Title}=E, _Location) ->
                                                    {headers, Headers}])
     end.
 
-%% @spec multiple_choices(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec multiple_choices(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 300 Multiple Choices redirection.
--spec multiple_choices(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec multiple_choices(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 multiple_choices(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=300,
                        title="Multiple Choices",
@@ -267,9 +267,9 @@ multiple_choices(Detail, Headers, Comment, Location) ->
                        comment=Comment},
                Location).
 
-%% @spec moved_perm(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec moved_perm(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 301 Moved Permanently redirection.
--spec moved_perm(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec moved_perm(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 moved_perm(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=301,
                        title="Moved Permanently",
@@ -279,9 +279,9 @@ moved_perm(Detail, Headers, Comment, Location) ->
                        comment=Comment},
                Location).
 
-%% @spec found(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec found(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 302 Found redirection.
--spec found(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec found(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 found(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=302,
                        title="Found",
@@ -291,11 +291,11 @@ found(Detail, Headers, Comment, Location) ->
                        comment=Comment},
                Location).
 
-%% @spec see_other(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec see_other(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 303 See Other redirection. This redirect can safely be used
 %% after a POST request (the new location shoult be retrieved with GET by the
 %% user agent).
--spec see_other(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec see_other(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 see_other(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=303,
                        title="See Other",
@@ -305,10 +305,10 @@ see_other(Detail, Headers, Comment, Location) ->
                        comment=Comment},
               Location).
 
-%% @spec not_modified(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec not_modified(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 304 Not Modified redirection. Note: This should include a
 %% Date or ETag header...
--spec not_modified(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec not_modified(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 not_modified(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=304,
                        title="Not Modified",
@@ -319,9 +319,9 @@ not_modified(Detail, Headers, Comment, Location) ->
                        comment=Comment},
               Location).
 
-%% @spec use_proxy(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec use_proxy(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 305 Use Proxy redirection.
--spec use_proxy(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec use_proxy(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 use_proxy(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=305,
                        title="Use Proxy",
@@ -331,9 +331,9 @@ use_proxy(Detail, Headers, Comment, Location) ->
                        comment=Comment},
               Location).
 
-%% @spec temporary_redir(string(), proplist(), string(), string() | bool()) -> ewgi_app()
+%% @spec temporary_redir(string(), proplist(), string(), string() | boolean()) -> ewgi_app()
 %% @doc Returns a 307 Temporary Redirect redirection.
--spec temporary_redir(string(), proplist(), string(), string() | bool()) -> ewgi_app().
+-spec temporary_redir(string(), proplist(), string(), string() | boolean()) -> ewgi_app().
 temporary_redir(Detail, Headers, Comment, Location) ->
     http_redir(#status{code=307,
                        title="Temporary Redirect",
