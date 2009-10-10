@@ -39,7 +39,7 @@ encode(<<Key:16/binary>>, Data, MaxSize) when MaxSize > 0, is_binary(Data) ->
     IV = crypto:rand_bytes(16),
     DataCompressed = zlib:zip(Data),
     DataCrypted = crypto:aes_cfb_128_encrypt(Key, IV, DataCompressed),
-    Timestamp = smak_calendar:now_utc_ts_ms(),
+    Timestamp = ewgi_util_calendar:now_utc_ts_ms(),
     HMACSignature = crypto:sha_mac(Key, <<Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>),
     Result = <<HMACSignature:20/binary, Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>,
     case size(Result) of
@@ -55,7 +55,7 @@ encode(_Key, _, _) ->
 %% @doc Checks the signature and timeout and decrypts the cookie if it is valid.
 -spec decode(binary(), binary(), integer()) -> binary() | {error, atom()}.
 decode(<<Key:16/binary>>, <<HMACSignature:20/binary, Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>, Timeout) ->
-    MinimumAge = smak_calendar:now_utc_ts_ms() - Timeout,
+    MinimumAge = ewgi_util_calendar:now_utc_ts_ms() - Timeout,
     case crypto:sha_mac(Key, <<Timestamp:48/integer, IV:16/binary, DataCrypted/bits>>) of
         HMACSignature ->
             case Timestamp - MinimumAge of

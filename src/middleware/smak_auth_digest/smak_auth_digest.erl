@@ -187,8 +187,8 @@ unauthorized(Conf) ->
 
 -spec unauthorized(bool(), #conf{}) -> ewgi_app().
 unauthorized(Stale, Conf) ->
-    {NowDt, NowMs} = smak_calendar:now_utc_ms(),
-    Now = smak_calendar:now_to_unix_ts(NowDt, NowMs),
+    {NowDt, NowMs} = ewgi_util_calendar:now_utc_ms(),
+    Now = ewgi_util_calendar:now_to_unix_ts(NowDt, NowMs),
     Rand = smak_random:uniform(),
     Nonce = smak_hex:to_hex(erlang:md5(io_lib:format("~.6f:~.16f", [Now, Rand]))),
     Opaque = smak_hex:to_hex(erlang:md5(io_lib:format("~.6f:~.16f", [Now, Rand]))),
