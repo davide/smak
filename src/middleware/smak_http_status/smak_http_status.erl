@@ -708,9 +708,9 @@ plain_output(Ctx, #status{code=Code, title=Title, template=#body_template{plain=
 %% @doc Deliver HTML output of the error with necessary entities escaped.
 html_output(Ctx, #status{title=Title, template=#body_template{html=T}}=Err) ->
     Body = make_body(Ctx,
-                     Err#status{detail=smak_html_util:escape(Err#status.detail),
-                                      explanation=smak_html_util:escape(Err#status.explanation),
-                                      comment=smak_html_util:escape(Err#status.comment)},
+                     Err#status{detail=ewgi_util_html:escape(Err#status.detail),
+                                      explanation=ewgi_util_html:escape(Err#status.explanation),
+                                      comment=ewgi_util_html:escape(Err#status.comment)},
                      T),
     io_lib:format("<html>\r<head><title>~s</title></head>\r<body>\r<h1>~s</h1>\r"
                   "<p>~s</p><hr noshade=\"noshade\" />\r<div align=\"right\">smak EWGI server</div>\r"
@@ -722,7 +722,7 @@ make_body(Ctx, #status{detail=Detail, explanation=Explanation, comment=Comment},
     Tmpl(Detail, Explanation, Comment, EscapedCtx).
 
 body_repr(Str) when is_list(Str) ->
-    smak_html_util:escape(Str);
+    ewgi_util_html:escape(Str);
 body_repr(A) when is_atom(A) ->
     body_repr(atom_to_list(A));
 body_repr(I) when is_integer(I) ->
