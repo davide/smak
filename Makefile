@@ -7,8 +7,7 @@ all: erl ebin/$(APP).app
 	make -C deps/ewgi all
 
 erl: ebin lib
-	@$(ERL) -pa $(EBIN_DIRS) -pa ebin -noinput +B \
-	-eval 'case make:all() of up_to_date -> halt(0); error -> halt(1) end.'
+	@./support/compile.erl ebin src/$(APP).app $(EBIN_DIRS)
 
 docs:
 	@$(ERL) -noshell -run edoc_run application '$(APP)' '"."' '[]'
@@ -18,8 +17,8 @@ clean:
 	@rm -fv ebin/*.beam ebin/*.app
 	make -C deps/ewgi clean
 
-ebin/$(APP).app: src/$(APP).app
-	@cp -v src/$(APP).app $@
+ebin/$(APP).app: src/$(APP).app Makefile
+	@./support/gen_app_file.erl src/$(APP).app $@ $(VSN)
 
 ebin:
 	@mkdir ebin
